@@ -1,0 +1,71 @@
+# Single-step vectors: initial state -> expected after one step
+# Registers r0..r31 as list; pc is r31; flags integer (bit0 Intenable, bit1 Zero, ...)
+
+- name: nop_advances_pc
+  mem: {}
+  word: 0x00000000
+  pc: 0x1000
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1000]
+  flags: 0
+  expect:
+    pc: 0x1004
+    halted: false
+
+- name: halt
+  mem: {}
+  word: 0xFFFFFFFF
+  pc: 0x2000
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x2000]
+  flags: 0
+  expect:
+    pc: 0x2000
+    halted: true
+
+- name: add_r1_r2_res
+  # ADD: opcode 100001 at [31:26], r1=1, r2=2, res=3
+  # encoding: 0x21<<26 | 1<<21 | 2<<16 | 3<<11 = 0x84221800
+  mem: {}
+  word: 0x84221800
+  pc: 0x0
+  regs: [0, 5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs:
+      3: 12
+    pc: 4
+
+- name: adds_sets_flags_zero
+  # ADDS r1=1 r2=2 res=3, values 0 and 0 -> Z=1
+  mem: {}
+  word: 0x8C221800
+  pc: 0x0
+  regs: [0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs:
+      3: 0
+    flags_mask: 0b11110
+    flags_expected: 0b010  # Zero bit1 = 2
+
+- name: jmp_sets_pc
+  # JMP raddr=5 imm11=4 -> target = R5 + 4  (0x10+4=0x14)
+  mem: {}
+  word: 0x40A00004
+  pc: 0x1000
+  regs: [0, 0, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1000]
+  flags: 0
+  expect:
+    pc: 0x14
+
+- name: ldr_masked
+  mem:
+    0x1000: 0xAABBCCDD
+  word: 0x0422A800
+  # LDR: raddr=1, rdest=2, mask=0x15, imm=0
+  pc: 0x0
+  regs: [0, 0x1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs:
+      2: 0x00BB00DD
+    pc: 4
