@@ -1,0 +1,274 @@
+# E32C opcode table for decoder (bits [31:26])
+# field bit ranges are inclusive hi:lo, MSB = 31
+
+word_width_bits: 32
+pc_register: 31
+zero_register: 0
+
+special_words:
+  nop: 0x00000000
+  halt: 0xFFFFFFFF
+
+instructions:
+  - mnemonic: NOP
+    opcode: 0b000000
+    format: special_nop
+    fields: []
+
+  - mnemonic: LDR
+    opcode: 0b000001
+    format: load_store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdest
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: STR
+    opcode: 0b000010
+    format: store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdata
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JMP
+    opcode: 0b010000
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JZ
+    opcode: 0b010001
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JNZ
+    opcode: 0b010010
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JC
+    opcode: 0b010011
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JS
+    opcode: 0b010100
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: JO
+    opcode: 0b010101
+    format: branch
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: ADD
+    opcode: 0b100001
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SUB
+    opcode: 0b100010
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: ADDS
+    opcode: 0b100011
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SUBS
+    opcode: 0b100100
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: AND
+    opcode: 0b100101
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: OR
+    opcode: 0b100110
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: XOR
+    opcode: 0b100111
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SLL
+    opcode: 0b101000
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SLR
+    opcode: 0b101001
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SAL
+    opcode: 0b101010
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: MUL
+    opcode: 0b101100
+    format: mul
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: resh
+        bits: [10, 6]
+
+  - mnemonic: ADDI
+    opcode: 0b110000
+    format: imm16
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: immh
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: SUBI
+    opcode: 0b110001
+    format: imm16
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: immh
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: EI
+    opcode: 0b110010
+    format: bare
+    fields: []
+
+  - mnemonic: DI
+    opcode: 0b110011
+    format: bare
+    fields: []
+
+  - mnemonic: READSPR
+    opcode: 0b110100
+    format: spr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: spr
+        bits: [15, 11]
+
+  - mnemonic: IRET
+    opcode: 0b111110
+    format: bare
+    fields: []
+
+  - mnemonic: HALT
+    opcode: 0b111111
+    format: special_halt
+    fields: []

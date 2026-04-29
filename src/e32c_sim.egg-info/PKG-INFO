@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: e32c-sim
+Version: 0.1.0
+Summary: Functional E32C ISA simulator
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: hypothesis>=6.0; extra == "dev"
+
+# E32C functional core (Python)
+
+ISA spec: [docs/isa/spec.md](docs/isa/spec.md). Opcodes: [docs/isa/opcodes.yaml](docs/isa/opcodes.yaml).
+
+## Dev
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+```
+
+## CLI
+
+```bash
+python -m cli.sim --help
+```
