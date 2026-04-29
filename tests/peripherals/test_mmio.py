@@ -69,6 +69,28 @@ def test_timer_irq_once_pending_blocks() -> None:
     assert st.pc == 0x8000
 
 
+def test_timer_no_pending_before_cpu_intenable() -> None:
+    """Match compare + IRQ_EN but Intenable off: no PENDING; IRQ fires once EI-equivalent is set."""
+    ram = Memory(256)
+    bus = SystemBus(ram)
+    ctr = CycleCounter()
+    bus.set_cycle_counter(ctr)
+    st = CPUState()
+    st.spr_write(SPR_IRQ_VECTOR, 0x800)
+    tbase = MMIO_BASE_DEFAULT + 0x2000
+    bus.write_word(tbase + 8, 2)
+    bus.write_word(tbase + 12, 0)
+    bus.write_word(tbase + 16, 1)
+    ctr.add(3)
+    bus.on_step_end(3, st, 0x100)
+    assert not (bus.timer.read_reg(16) & 0x2)
+    st.flags |= F.FLAG_INTENABLE
+    bus.on_step_end(3, st, 0x200)
+    assert st.pc == 0x800
+    assert st.spr_read(0) == 0x200
+    assert bus.timer.read_reg(16) & 0x2
+
+
 def test_runner_counts_cycles_memory_only() -> None:
     from core.runner import Runner
 

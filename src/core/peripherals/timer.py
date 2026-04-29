@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+from core import flags as F
 from core.state import CPUState
 
 GetCycles = Callable[[], int]
@@ -65,6 +66,9 @@ class CycleTimer:
         """After incrementing global cycle count; may call raise_irq once."""
         if self._pending or not self._irq_en:
             return
-        if total_cycles >= self._compare:
-            self._pending = True
-            state.raise_irq(return_pc)
+        if total_cycles < self._compare:
+            return
+        if not (state.flags & F.FLAG_INTENABLE):
+            return
+        self._pending = True
+        state.raise_irq(return_pc)
