@@ -25,6 +25,10 @@ class Uart:
     def tx_buffer(self) -> bytearray:
         return self._tx_buf
 
+    @property
+    def rx_queued(self) -> int:
+        return len(self._rx)
+
     def feed_rx(self, data: bytes) -> None:
         for b in data:
             self._rx.append(b & 0xFF)
@@ -49,6 +53,13 @@ class Uart:
             self._tx_buf.append(b)
             if self._on_tx_byte is not None:
                 self._on_tx_byte(b)
+
+    def set_on_tx_byte(self, cb: Callable[[int], None] | None) -> None:
+        """Optional hook on each TX byte (call only from the CPU / main UI thread)."""
+        self._on_tx_byte = cb
+
+    def clear_tx(self) -> None:
+        self._tx_buf.clear()
 
     def write_stream_hook(self, stream: BinaryIO) -> None:
         """Append bytes to stream on each TX (e.g. stdout.buffer)."""

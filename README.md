@@ -13,5 +13,16 @@ pytest -q
 
 ```bash
 python -m cli.sim --help
+python -m cli.debug --help
 ```
+
+## Debugger GUI (tkinter)
+
+```bash
+python -m cli.debug_gui --help
+# or, after install:
+e32c-debug-gui --hex path/to/prog.hex --mmio
+```
+
+Load a `--bin` or `--hex` image, optional `--mmio` / `--mmio-base` (same as `cli.debug`). Use **File → Open** in the GUI to load without restarting.
 

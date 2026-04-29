@@ -28,11 +28,8 @@ MAIN = 0x200
 HANDLER = 0x400
 
 
-def main() -> None:
-    ram = Memory(1 << 20)
-    bus = SystemBus(ram)
-    st = CPUState()
-
+def prepare_device_demo(ram: Memory, bus: SystemBus, st: CPUState) -> None:
+    """Load pool constants, UART RX seed, IRQ vector, and assembled main/handler into RAM."""
     ram.write_word(POOL + 0x00, 0xFFFF_0000)
     ram.write_word(POOL + 0x04, 0xCAFE_BABE)
     ram.write_word(POOL + 0x08, 0x00FF_00FF)
@@ -100,6 +97,14 @@ IRET
     for w in handler_words:
         ram.write_word(a, w)
         a += 4
+
+
+def main() -> None:
+    ram = Memory(1 << 20)
+    bus = SystemBus(ram)
+    st = CPUState()
+
+    prepare_device_demo(ram, bus, st)
 
     st.set_pc(MAIN)
     r = Runner(st, bus)

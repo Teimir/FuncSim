@@ -31,3 +31,6 @@ class CycleCounter:
         if n < 0:
             raise ValueError("cycle delta must be non-negative")
         self._value += n
+
+    def reset(self) -> None:
+        self._value = 0
