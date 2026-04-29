@@ -1,0 +1,17 @@
+# Простой тест: ADDI, ADDI, ADD, SUB, HALT
+# r2=10, r3=15, r4=25, r5=5; PC на 0x1000
+
+# ADDI: r1=1 src, r2 dst, imm16=10  -> r2 = 0+10
+0xC020100A
+
+# ADDI: r1=2 src, r3 dst, imm16=5   -> r3 = 10+5
+0xC0401805
+
+# ADD: r1=2, r2=3, res=4            -> r4 = 10+15
+0x84432000
+
+# SUB: r1=3, r2=2, res=5            -> r5 = 15-10
+0x88622800
+
+# HALT
+0xFFFFFFFF

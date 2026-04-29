@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from core import flags as F
 from core.instruction import Instruction
-from core.memory import Memory
+from core.mem_if import WordMemory
 from core.state import CPUState, SPR_SAVED_IRQ_PC
 
 
@@ -52,7 +52,7 @@ def _merge_str_mask(old: int, value: int, mask: int) -> int:
     return _u32(w)
 
 
-def execute(state: CPUState, mem: Memory, ins: Instruction) -> bool:
+def execute(state: CPUState, mem: WordMemory, ins: Instruction) -> bool:
     """
     Mutate state and memory.
     Returns True if PC was explicitly written (no +4 bump by runner).

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from core.bus import SystemBus
 from core.memory import Memory
 
 
-def load_binary(mem: Memory, addr: int, path: Path) -> None:
+def load_binary(mem: Memory | SystemBus, addr: int, path: Path) -> None:
     data = path.read_bytes()
     mem.write_bytes(addr, data)
 
@@ -22,7 +23,7 @@ def words_from_hex_lines(text: str) -> list[int]:
     return out
 
 
-def load_words(mem: Memory, addr: int, words: list[int]) -> None:
+def load_words(mem: Memory | SystemBus, addr: int, words: list[int]) -> None:
     a = addr
     for w in words:
         mem.write_word(a, w)

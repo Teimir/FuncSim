@@ -15,3 +15,11 @@ class MisalignedAccess(CpuError):
 
 class CpuHalted(CpuError):
     """Execution stopped via HALT."""
+
+
+class BreakpointHit(CpuError):
+    """Execution stopped at a breakpoint PC."""
+
+    def __init__(self, pc: int) -> None:
+        super().__init__(f"breakpoint hit at 0x{pc:x}")
+        self.pc = pc
