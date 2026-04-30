@@ -7,6 +7,7 @@ ISA spec: [docs/isa/spec.md](docs/isa/spec.md). Opcodes: [docs/isa/opcodes.yaml]
 ```bash
 pip install -e ".[dev]"
 pytest -q
+python examples/launch_smoke.py
 ```
 
 ## CLI
@@ -20,6 +21,9 @@ python -m cli.debug --help
 
 ```bash
 python -m cli.debug_gui --help
+python examples/launch_smoke_gui.py
+python examples/uart_calculator.py
+python examples/uart_calculator_gui.py
 # or, after install:
 e32c-debug-gui --hex path/to/prog.hex --mmio
 ```

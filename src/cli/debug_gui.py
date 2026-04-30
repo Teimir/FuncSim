@@ -7,6 +7,7 @@ import json
 import queue
 import re
 import threading
+import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
@@ -18,13 +19,32 @@ from core.debug_controller import DebugController, ListingLine, MmioSnapshot, St
 from core.memory import Memory
 from core.trace import StepTrace
 
+FONT_MONO = ("Consolas", 10)
+FONT_MONO_BOLD = ("Consolas", 10, "bold")
+FONT_MONO_COMPACT = ("Consolas", 9)
+FONT_MONO_BOLD_COMPACT = ("Consolas", 9, "bold")
+DISASM_COL_WIDTHS = (100, 100, 420, 40)
+MEM_COL_WIDTH_ADDR = 90
+MEM_COL_WIDTH_WORD = 110
+TRACE_COL_WIDTH_DEFAULT = 100
+TRACE_COL_WIDTH_N = 70
+TRACE_COL_WIDTH_DISASM = 320
+
 
 class DebuggerApp(tk.Tk):
     def __init__(self, ctrl: DebugController) -> None:
         super().__init__()
         self.title("E32C debugger")
+        self._mono_font = FONT_MONO
+        self._mono_bold_font = FONT_MONO_BOLD
+        style = ttk.Style(self)
+        style.configure("Mono.Treeview", font=self._mono_font, rowheight=20)
+        style.configure("Mono.Treeview.Heading", font=self._mono_bold_font)
+        self._var_density = tk.StringVar(value="default")
         self._ctrl = ctrl
         self._run_queue: queue.Queue[object] = queue.Queue()
+        self._run_thread_active = False
+        self._is_closing = False
         self._pending_status: str | None = None
         self._auto_after_id: str | None = None
         self._uart_win: UartTerminalWindow | None = None
@@ -33,6 +53,12 @@ class DebuggerApp(tk.Tk):
         self._var_burst = tk.StringVar(value="1")
         self._var_list_radius = tk.StringVar(value=str(ctrl.listing_radius))
         self._var_fast_refresh = tk.BooleanVar(value=False)
+        self._var_status_mode = tk.StringVar(value="minimal")
+        self._perf_last_ts = time.perf_counter()
+        self._perf_last_instr = 0
+        self._perf_last_cycles = 0
+        self._perf_active_dt = 0.0
+        self._perf_active_instr = 0
         self.protocol("WM_DELETE_WINDOW", self._on_main_close)
         self._build_menu()
         self._build_toolbar()
@@ -50,17 +76,23 @@ class DebuggerApp(tk.Tk):
         self._build_mmio_tab(self._tab_mmio)
         self._build_trace_tab(self._tab_trace)
         self._build_bp_tab(self._tab_bp)
+        self._apply_density_mode()
         self._status = tk.StringVar(value="Ready")
         ttk.Label(self, textvariable=self._status, relief=tk.SUNKEN, anchor=tk.W).pack(
             fill=tk.X, side=tk.BOTTOM
         )
         self.bind("<F7>", lambda e: self._on_step())
         self.bind("<F8>", lambda e: self._on_continue())
+        self.bind("<F6>", lambda e: self._on_run_n())
+        self.bind("<Control-r>", lambda e: self._on_reset())
         self.bind("<Control-o>", lambda e: self._open_file())
+        self.bind("<Control-u>", lambda e: self._open_uart_terminal())
+        self.bind("<Control-a>", lambda e: self._toggle_auto_hotkey())
         self.after(100, self._poll_run_queue)
         self.refresh()
 
     def _on_main_close(self) -> None:
+        self._is_closing = True
         self._stop_auto()
         if self._uart_win is not None:
             try:
@@ -69,7 +101,10 @@ class DebuggerApp(tk.Tk):
             except tk.TclError:
                 pass
             self._uart_win = None
-        self.destroy()
+        try:
+            self.destroy()
+        except tk.TclError:
+            pass
 
     def _toggle_auto(self) -> None:
         if self._var_auto.get():
@@ -274,13 +309,20 @@ class DebuggerApp(tk.Tk):
         m.add_cascade(label="View", menu=vm)
         vm.add_command(label="UART terminal…", command=self._open_uart_terminal)
         vm.add_checkbutton(label="Fast refresh (skip trace/MMIO text)", variable=self._var_fast_refresh)
+        vm.add_separator()
+        vm.add_radiobutton(label="Density: default", variable=self._var_density, value="default", command=self._apply_density_mode)
+        vm.add_radiobutton(label="Density: compact", variable=self._var_density, value="compact", command=self._apply_density_mode)
+        vm.add_separator()
+        vm.add_radiobutton(label="Status: minimal", variable=self._var_status_mode, value="minimal", command=self.refresh)
+        vm.add_radiobutton(label="Status: full", variable=self._var_status_mode, value="full", command=self.refresh)
         hm = tk.Menu(m, tearoff=0)
         m.add_cascade(label="Help", menu=hm)
         hm.add_command(
             label="Shortcuts",
             command=lambda: messagebox.showinfo(
                 "Shortcuts",
-                "F7 — Step\nF8 — Continue (max steps field)\nCtrl+O — Open hex\n\n"
+                "F7 — Step\nF6 — Run N\nF8 — Continue (max steps field)\n"
+                "Ctrl+R — Reset CPU\nCtrl+U — Open UART\nCtrl+A — Toggle Auto\nCtrl+O — Open hex\n\n"
                 "Registers / memory table: double-click to edit (RAM words only).\n"
                 "Listing: right-click toggles breakpoint.",
                 parent=self,
@@ -295,10 +337,14 @@ class DebuggerApp(tk.Tk):
         ttk.Label(bar, text="N:").pack(side=tk.LEFT)
         self._var_n = tk.StringVar(value="1")
         ttk.Entry(bar, textvariable=self._var_n, width=8).pack(side=tk.LEFT, padx=2)
+        for preset in ("1", "100", "1000", "10000"):
+            ttk.Button(bar, text=preset, command=lambda v=preset: self._set_n_preset(v)).pack(side=tk.LEFT, padx=1)
         ttk.Button(bar, text="Continue…", command=self._on_continue).pack(side=tk.LEFT, padx=2)
         ttk.Label(bar, text="max:").pack(side=tk.LEFT)
         self._var_max = tk.StringVar(value="100000")
         ttk.Entry(bar, textvariable=self._var_max, width=10).pack(side=tk.LEFT, padx=2)
+        for preset in ("1000", "10000", "100000"):
+            ttk.Button(bar, text=preset, command=lambda v=preset: self._set_max_preset(v)).pack(side=tk.LEFT, padx=1)
         ttk.Button(bar, text="Reset", command=self._on_reset).pack(side=tk.LEFT, padx=2)
         ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
         ttk.Checkbutton(bar, text="Auto", variable=self._var_auto, command=self._toggle_auto).pack(
@@ -309,6 +355,16 @@ class DebuggerApp(tk.Tk):
         ttk.Label(bar, text="burst:").pack(side=tk.LEFT)
         ttk.Entry(bar, textvariable=self._var_burst, width=5).pack(side=tk.LEFT, padx=2)
         ttk.Label(bar, text="(1=single step)").pack(side=tk.LEFT, padx=2)
+
+    def _set_n_preset(self, value: str) -> None:
+        self._var_n.set(value)
+
+    def _set_max_preset(self, value: str) -> None:
+        self._var_max.set(value)
+
+    def _toggle_auto_hotkey(self) -> None:
+        self._var_auto.set(not self._var_auto.get())
+        self._toggle_auto()
 
     def _build_main_tab(self, parent: ttk.Frame) -> None:
         top = ttk.PanedWindow(parent, orient=tk.HORIZONTAL)
@@ -327,6 +383,7 @@ class DebuggerApp(tk.Tk):
         reg_scroll = ttk.Scrollbar(left, command=self._tv_regs.yview)
         self._tv_regs.configure(yscrollcommand=reg_scroll.set)
         self._tv_regs.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._tv_regs.configure(style="Mono.Treeview")
         reg_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self._tv_regs.bind("<Double-1>", self._on_reg_double)
         flf = ttk.LabelFrame(left, text="Flags")
@@ -344,10 +401,12 @@ class DebuggerApp(tk.Tk):
         for c, t in zip(("idx", "val", "name"), ("#", "Value", "Name"), strict=True):
             self._tv_spr.heading(c, text=t)
         self._tv_spr.pack(fill=tk.BOTH, expand=True)
+        self._tv_spr.configure(style="Mono.Treeview")
         fetchf = ttk.LabelFrame(right, text="Next instruction @ PC")
         fetchf.pack(fill=tk.X)
         self._var_fetch = tk.StringVar()
-        ttk.Label(fetchf, textvariable=self._var_fetch, font=("Consolas", 10)).pack(anchor=tk.W)
+        self._lbl_fetch = ttk.Label(fetchf, textvariable=self._var_fetch, font=self._mono_font)
+        self._lbl_fetch.pack(anchor=tk.W)
         lhead = ttk.Frame(right)
         lhead.pack(fill=tk.X)
         ttk.Label(lhead, text="Disassembly (⇒ = PC, ● = breakpoint)").pack(side=tk.LEFT)
@@ -356,13 +415,16 @@ class DebuggerApp(tk.Tk):
         ttk.Button(lhead, text="Apply", command=self._on_list_radius_apply).pack(side=tk.LEFT)
         lcols = ("addr", "word", "dis", "mk")
         self._tv_list = ttk.Treeview(right, columns=lcols, show="headings", height=14)
-        for c, w in zip(lcols, (90, 90, 320, 40), strict=True):
+        for c, w in zip(lcols, DISASM_COL_WIDTHS, strict=True):
             self._tv_list.column(c, width=w)
         self._tv_list.heading("addr", text="Address")
         self._tv_list.heading("word", text="Word")
         self._tv_list.heading("dis", text="Disasm")
         self._tv_list.heading("mk", text="")
         self._tv_list.pack(fill=tk.BOTH, expand=True)
+        self._tv_list.configure(style="Mono.Treeview")
+        self._tv_list.tag_configure("pc", background="#ffe08a", foreground="#111111", font=self._mono_bold_font)
+        self._tv_list.tag_configure("bp", background="#ffd9d9")
         self._tv_list.bind("<Button-3>", self._on_list_rclick)
         memf = ttk.LabelFrame(right, text="Memory page")
         memf.pack(fill=tk.BOTH, expand=True, pady=4)
@@ -379,8 +441,9 @@ class DebuggerApp(tk.Tk):
         self._tv_mem = ttk.Treeview(memf, columns=mcols, show="headings", height=10)
         for c, title in zip(mcols, ("Addr", "w0", "w1", "w2", "w3"), strict=True):
             self._tv_mem.heading(c, text=title)
-            self._tv_mem.column(c, width=100 if c != "addr" else 80)
+            self._tv_mem.column(c, width=MEM_COL_WIDTH_WORD if c != "addr" else MEM_COL_WIDTH_ADDR)
         self._tv_mem.pack(fill=tk.BOTH, expand=True)
+        self._tv_mem.configure(style="Mono.Treeview")
         self._tv_mem.bind("<Double-1>", self._on_mem_double)
 
     def _build_mmio_tab(self, parent: ttk.Frame) -> None:
@@ -401,9 +464,28 @@ class DebuggerApp(tk.Tk):
         self._tv_trace = ttk.Treeview(parent, columns=cols, show="headings", height=22)
         for c, t in zip(cols, ("#", "PC", "Word", "Disasm", "Cycles", "H"), strict=True):
             self._tv_trace.heading(c, text=t)
-            self._tv_trace.column(c, width=70 if c == "n" else 90)
-        self._tv_trace.column("dis", width=260)
+            self._tv_trace.column(c, width=TRACE_COL_WIDTH_N if c == "n" else TRACE_COL_WIDTH_DEFAULT)
+        self._tv_trace.column("dis", width=TRACE_COL_WIDTH_DISASM)
         self._tv_trace.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        self._tv_trace.configure(style="Mono.Treeview")
+
+    def _apply_density_mode(self) -> None:
+        compact = self._var_density.get() == "compact"
+        if compact:
+            self._mono_font = FONT_MONO_COMPACT
+            self._mono_bold_font = FONT_MONO_BOLD_COMPACT
+            row_height = 18
+        else:
+            self._mono_font = FONT_MONO
+            self._mono_bold_font = FONT_MONO_BOLD
+            row_height = 20
+        style = ttk.Style(self)
+        style.configure("Mono.Treeview", font=self._mono_font, rowheight=row_height)
+        style.configure("Mono.Treeview.Heading", font=self._mono_bold_font)
+        if hasattr(self, "_tv_list"):
+            self._tv_list.tag_configure("pc", background="#ffe08a", foreground="#111111", font=self._mono_bold_font)
+        if hasattr(self, "_lbl_fetch"):
+            self._lbl_fetch.configure(font=self._mono_font)
 
     def _build_bp_tab(self, parent: ttk.Frame) -> None:
         ttk.Label(parent, text="Breakpoint addresses (word-aligned, hex):").pack(anchor=tk.W, padx=4)
@@ -482,12 +564,20 @@ class DebuggerApp(tk.Tk):
             return
         if n <= 0:
             return
+        if self._run_thread_active:
+            self._pending_status = "Background run already active"
+            self.refresh()
+            return
         if n > 50_000:
 
             def go() -> None:
-                res = self._ctrl.run_n(n)
-                self.after(0, lambda: self._finish_run(res))
+                try:
+                    res = self._ctrl.run_n(n)
+                    self._run_queue.put(("done", res))
+                except Exception as e:  # noqa: BLE001
+                    self._run_queue.put(("error", f"Run N failed: {e!r}"))
 
+            self._run_thread_active = True
             threading.Thread(target=go, daemon=True).start()
             self._pending_status = f"Running {n} steps in background…"
             self.refresh()
@@ -501,11 +591,19 @@ class DebuggerApp(tk.Tk):
         except ValueError:
             messagebox.showerror("Continue", "Invalid max steps")
             return
+        if self._run_thread_active:
+            self._pending_status = "Background run already active"
+            self.refresh()
+            return
 
         def go() -> None:
-            res = self._ctrl.run_n(mx)
-            self._run_queue.put(("done", res))
+            try:
+                res = self._ctrl.run_n(mx)
+                self._run_queue.put(("done", res))
+            except Exception as e:  # noqa: BLE001
+                self._run_queue.put(("error", f"Continue failed: {e!r}"))
 
+        self._run_thread_active = True
         self._pending_status = "Continuing…"
         self.refresh()
         threading.Thread(target=go, daemon=True).start()
@@ -515,10 +613,15 @@ class DebuggerApp(tk.Tk):
             while True:
                 item = self._run_queue.get_nowait()
                 if item[0] == "done":
+                    self._run_thread_active = False
                     self._finish_run(item[1])
+                elif item[0] == "error":
+                    self._run_thread_active = False
+                    self._handle_runtime_error(str(item[1]))
         except queue.Empty:
             pass
-        self.after(100, self._poll_run_queue)
+        if not self._is_closing:
+            self.after(100, self._poll_run_queue)
 
     def _finish_run(self, res: object) -> None:
         assert isinstance(res, StepResult)
@@ -539,11 +642,28 @@ class DebuggerApp(tk.Tk):
         elif res.kind == StepKind.BREAKPOINT:
             self._pending_status = res.message or "Breakpoint"
         elif res.kind == StepKind.ERROR:
-            self._pending_status = f"Error: {res.message}"
+            self._handle_runtime_error(str(res.message))
+
+    def _handle_runtime_error(self, message: str) -> None:
+        self._pending_status = f"Error: {message}"
+        try:
+            if not self._is_closing:
+                messagebox.showerror("Execution error", message, parent=self)
+        except tk.TclError:
+            pass
 
     def _on_reset(self) -> None:
+        if self._run_thread_active:
+            self._pending_status = "Wait for background run to finish before reset"
+            self.refresh()
+            return
         self._stop_auto()
         self._ctrl.reset_cpu(preserve_breakpoints=True)
+        self._perf_last_ts = time.perf_counter()
+        self._perf_last_instr = 0
+        self._perf_last_cycles = 0
+        self._perf_active_dt = 0.0
+        self._perf_active_instr = 0
         self._pending_status = "CPU reset"
         self.refresh()
 
@@ -617,15 +737,53 @@ class DebuggerApp(tk.Tk):
         self._var_page.set(hex(self._ctrl.mem_page_base))
         parts = [
             f"instr={snap.instruction_count}",
-            f"cycles={snap.cycles}",
-            f"halted={snap.halted}",
+            f"cyc={snap.cycles}",
+            f"halt={'Y' if snap.halted else 'N'}",
         ]
+        now = time.perf_counter()
+        dt = max(0.0, now - self._perf_last_ts)
+        dinstr = max(0, snap.instruction_count - self._perf_last_instr)
+        dcycles = max(0, snap.cycles - self._perf_last_cycles)
+        burst_ips = (dinstr / dt) if dt > 1e-9 else 0.0
+        burst_cps = (dcycles / dt) if dt > 1e-9 else 0.0
+        if dinstr > 0 and dt > 1e-9:
+            self._perf_active_dt += dt
+            self._perf_active_instr += dinstr
+        avg_ips = (self._perf_active_instr / self._perf_active_dt) if self._perf_active_dt > 1e-9 else 0.0
+        avg_cps = (snap.cycles / self._perf_active_dt) if self._perf_active_dt > 1e-9 else 0.0
+        run_state = "idle" if (dinstr == 0 and dcycles == 0) else "running"
+        if self._var_status_mode.get() == "full":
+            parts.extend(
+                [
+                    f"{run_state}",
+                    f"ips(avg/burst)={self._fmt_rate(avg_ips)}/{self._fmt_rate(burst_ips)}",
+                    f"cps(avg/burst)={self._fmt_rate(avg_cps)}/{self._fmt_rate(burst_cps)}",
+                    f"ms={dt*1000.0:.1f}",
+                ]
+            )
+        else:
+            parts.extend(
+                [
+                    f"{run_state}",
+                    f"ips(avg/burst)={self._fmt_rate(avg_ips)}/{self._fmt_rate(burst_ips)}",
+                ]
+            )
+        self._perf_last_ts = now
+        self._perf_last_instr = snap.instruction_count
+        self._perf_last_cycles = snap.cycles
         if self._pending_status:
             parts.append(self._pending_status)
             self._pending_status = None
         if snap.last_error:
             parts.append(snap.last_error)
         self._status.set("  |  ".join(parts))
+
+    def _fmt_rate(self, value: float) -> str:
+        if value >= 1_000_000.0:
+            return f"{value / 1_000_000.0:.2f}M"
+        if value >= 1_000.0:
+            return f"{value / 1_000.0:.2f}k"
+        return f"{value:.0f}"
 
     def _fmt_fetch(self, s: UiSnapshot) -> str:
         if s.fetch_word is None:
@@ -663,7 +821,12 @@ class DebuggerApp(tk.Tk):
             elif ln.is_breakpoint:
                 mk = "●"
             w = "" if ln.word is None else f"0x{ln.word:08x}"
-            self._tv_list.insert("", tk.END, values=(f"0x{ln.addr:08x}", w, ln.disasm, mk))
+            tags: tuple[str, ...] = ()
+            if ln.is_pc:
+                tags = ("pc",)
+            elif ln.is_breakpoint:
+                tags = ("bp",)
+            self._tv_list.insert("", tk.END, values=(f"0x{ln.addr:08x}", w, ln.disasm, mk), tags=tags)
 
     def _fill_mem(self, rows: list[tuple[int, list[int | None]]]) -> None:
         for x in self._tv_mem.get_children():

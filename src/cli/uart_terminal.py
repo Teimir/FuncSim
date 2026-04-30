@@ -17,6 +17,8 @@ class UartTerminalWindow(tk.Toplevel):
         self._ctrl = ctrl
         self._shown_len = 0
         self._poll_after: str | None = None
+        self._history: list[str] = []
+        self._history_index: int = -1
 
         ttk.Label(self, text="TX (from CPU, read-only)").pack(anchor=tk.W, padx=4, pady=2)
         self._tx = tk.Text(self, height=16, width=72, font=("Consolas", 10), state=tk.DISABLED, wrap=tk.CHAR)
@@ -28,21 +30,40 @@ class UartTerminalWindow(tk.Toplevel):
         ttk.Button(bf, text="Clear TX buffer", command=self._clear_hw_tx).pack(side=tk.LEFT, padx=2)
         ttk.Button(bf, text="Sync from buffer", command=self._full_resync).pack(side=tk.LEFT, padx=2)
 
-        ttk.Label(self, text="RX → CPU (plain text; sent as UTF-8 bytes)").pack(anchor=tk.W, padx=4)
+        ttk.Label(
+            self,
+            text="RX → CPU. Mode: line/raw/hex. For calculator send expressions like 12*12 or HALT.",
+        ).pack(anchor=tk.W, padx=4)
         rx_row = ttk.Frame(self)
         rx_row.pack(fill=tk.X, padx=4, pady=4)
         self._var_line = tk.StringVar()
-        ttk.Entry(rx_row, textvariable=self._var_line, width=60).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self._var_append_newline = tk.BooleanVar(value=True)
+        self._var_mode = tk.StringVar(value="line")
+        ttk.Combobox(
+            rx_row,
+            textvariable=self._var_mode,
+            values=("line", "raw", "hex"),
+            width=8,
+            state="readonly",
+        ).pack(side=tk.LEFT, padx=4)
+        self._entry = ttk.Entry(rx_row, textvariable=self._var_line, width=60)
+        self._entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         ttk.Button(rx_row, text="Send", command=self._send_text).pack(side=tk.LEFT, padx=4)
+        ttk.Checkbutton(rx_row, text="append \\n", variable=self._var_append_newline).pack(side=tk.LEFT, padx=4)
 
-        ttk.Label(self, text="Or hex bytes (e.g. 58 0a):").pack(anchor=tk.W, padx=4)
-        hx_row = ttk.Frame(self)
-        hx_row.pack(fill=tk.X, padx=4, pady=2)
-        self._var_hex = tk.StringVar()
-        ttk.Entry(hx_row, textvariable=self._var_hex, width=60).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(hx_row, text="Send hex", command=self._send_hex).pack(side=tk.LEFT, padx=4)
+        hist = ttk.LabelFrame(self, text="RX history")
+        hist.pack(fill=tk.BOTH, expand=False, padx=4, pady=4)
+        self._lb_hist = tk.Listbox(hist, height=5, font=("Consolas", 10))
+        self._lb_hist.pack(fill=tk.BOTH, expand=True)
+        hist_row = ttk.Frame(hist)
+        hist_row.pack(fill=tk.X)
+        ttk.Button(hist_row, text="Reuse selected", command=self._reuse_selected_history).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(hist_row, text="Clear history", command=self._clear_history).pack(side=tk.LEFT, padx=2, pady=2)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.bind("<Return>", lambda _e: self._send_text())
+        self.bind("<Up>", lambda _e: self._history_prev())
+        self.bind("<Down>", lambda _e: self._history_next())
         self._schedule_poll()
 
     def _schedule_poll(self) -> None:
@@ -101,26 +122,94 @@ class UartTerminalWindow(tk.Toplevel):
         if not isinstance(self._ctrl.mem, SystemBus):
             messagebox.showinfo("UART", "MMIO not enabled", parent=self)
             return
-        line = self._var_line.get()
-        self._ctrl.feed_uart_rx(line.encode("utf-8", errors="replace"))
+        line = self._var_line.get().strip() if self._var_mode.get() == "hex" else self._var_line.get()
+        mode = self._var_mode.get()
+        if mode == "line":
+            if self._var_append_newline.get():
+                line += "\n"
+            payload = line.encode("utf-8", errors="replace")
+        elif mode == "raw":
+            payload = line.encode("utf-8", errors="replace")
+        elif mode == "hex":
+            if not line:
+                return
+            try:
+                payload = bytes(int(x, 16) & 0xFF for x in line.split())
+            except ValueError:
+                messagebox.showerror("UART", "Invalid hex", parent=self)
+                return
+        else:
+            payload = line.encode("utf-8", errors="replace")
+        if not payload:
+            return
+        self._ctrl.feed_uart_rx(payload)
+        self._add_history(f"{mode}: {line!r}")
         self._var_line.set("")
 
-    def _send_hex(self) -> None:
-        from core.bus import SystemBus
+    def _add_history(self, value: str) -> None:
+        if not value:
+            return
+        if self._history and self._history[-1] == value:
+            self._history_index = len(self._history)
+            return
+        self._history.append(value)
+        if len(self._history) > 50:
+            self._history.pop(0)
+        self._history_index = len(self._history)
+        self._refresh_history_view()
 
-        if not isinstance(self._ctrl.mem, SystemBus):
-            messagebox.showinfo("UART", "MMIO not enabled", parent=self)
+    def _refresh_history_view(self) -> None:
+        self._lb_hist.delete(0, tk.END)
+        for item in self._history:
+            self._lb_hist.insert(tk.END, item)
+
+    def _reuse_selected_history(self) -> None:
+        sel = self._lb_hist.curselection()
+        if not sel:
             return
-        raw = self._var_hex.get().strip()
-        if not raw:
+        item = self._lb_hist.get(sel[0])
+        mode, _, payload = item.partition(":")
+        mode = mode.strip()
+        if mode in ("line", "raw", "hex"):
+            self._var_mode.set(mode)
+        self._var_line.set(payload.strip().strip("'"))
+        self._entry.focus_set()
+
+    def _clear_history(self) -> None:
+        self._history.clear()
+        self._history_index = -1
+        self._refresh_history_view()
+
+    def _history_prev(self) -> None:
+        if not self._history:
             return
-        try:
-            data = bytes(int(x, 16) & 0xFF for x in raw.split())
-        except ValueError:
-            messagebox.showerror("UART", "Invalid hex", parent=self)
+        if self._history_index == -1:
+            self._history_index = len(self._history) - 1
+        else:
+            self._history_index = max(0, self._history_index - 1)
+        self._load_history_entry()
+
+    def _history_next(self) -> None:
+        if not self._history:
             return
-        self._ctrl.feed_uart_rx(data)
-        self._var_hex.set("")
+        if self._history_index == -1:
+            return
+        self._history_index += 1
+        if self._history_index >= len(self._history):
+            self._history_index = len(self._history)
+            self._var_line.set("")
+            return
+        self._load_history_entry()
+
+    def _load_history_entry(self) -> None:
+        if self._history_index < 0 or self._history_index >= len(self._history):
+            return
+        item = self._history[self._history_index]
+        mode, _, payload = item.partition(":")
+        mode = mode.strip()
+        if mode in ("line", "raw", "hex"):
+            self._var_mode.set(mode)
+        self._var_line.set(payload.strip().strip("'"))
 
     def _on_close(self) -> None:
         if self._poll_after is not None:
