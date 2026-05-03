@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import cmd
-import sys
 from pathlib import Path
 
 from core.bus import MMIO_BASE_DEFAULT, SystemBus
