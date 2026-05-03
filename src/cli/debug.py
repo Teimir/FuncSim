@@ -128,12 +128,20 @@ def main() -> None:
     p.add_argument("--bin", type=Path, help="Binary image")
     p.add_argument("--mmio", action="store_true")
     p.add_argument("--mmio-base", type=lambda x: int(x, 0), default=MMIO_BASE_DEFAULT)
+    p.add_argument("--sd-image", type=Path, default=None)
+    p.add_argument("--sd-create-sectors", type=int, default=None)
     args = p.parse_args()
 
     ram = Memory()
-    if args.mmio:
+    if args.mmio or args.sd_image is not None:
         uart = Uart()
-        mem: Memory | SystemBus = SystemBus(ram, mmio_base=args.mmio_base, uart=uart)
+        mem: Memory | SystemBus = SystemBus(
+            ram,
+            mmio_base=args.mmio_base,
+            uart=uart,
+            sd_image=args.sd_image,
+            sd_create_sectors=args.sd_create_sectors,
+        )
     else:
         mem = ram
 

@@ -47,6 +47,17 @@ class ListingLine:
 
 
 @dataclass
+class SdSnapshot:
+    path: str | None
+    mounted: bool
+    lba: int
+    status: int
+    err_code: int
+    sectors: int
+    buffer_preview: str
+
+
+@dataclass
 class MmioSnapshot:
     mmio_base: int
     gpio_out: int
@@ -59,6 +70,7 @@ class MmioSnapshot:
     timer_compare_lo: int
     timer_compare_hi: int
     timer_ctrl: int
+    sd: SdSnapshot
 
 
 @dataclass
@@ -110,6 +122,16 @@ def _mmio_snapshot(bus: SystemBus) -> MmioSnapshot:
     hx, asc = _uart_tx_preview(uart)
     st = uart.read_reg(uart.UART_STATUS)
     t = bus.timer
+    sd_info = bus.sd.snapshot_info()
+    sd_snap = SdSnapshot(
+        path=sd_info["path"],  # type: ignore[arg-type]
+        mounted=bool(sd_info["mounted"]),
+        lba=int(sd_info["lba_reg"]),
+        status=int(sd_info["status"]),
+        err_code=int(sd_info["err_code"]),
+        sectors=int(sd_info["sectors"]),
+        buffer_preview=str(sd_info["buffer_preview"]),
+    )
     return MmioSnapshot(
         mmio_base=base,
         gpio_out=bus.gpio.out,
@@ -122,6 +144,7 @@ def _mmio_snapshot(bus: SystemBus) -> MmioSnapshot:
         timer_compare_lo=t.read_reg(8),
         timer_compare_hi=t.read_reg(12),
         timer_ctrl=t.read_reg(16),
+        sd=sd_snap,
     )
 
 
@@ -157,6 +180,8 @@ class DebugController:
         mmio_base: int | None = None,
         load_addr: int = 0,
         uart: object | None = None,
+        sd_image: Path | None = None,
+        sd_create_sectors: int | None = None,
     ) -> DebugController:
         from core.bus import MMIO_BASE_DEFAULT
 
@@ -166,7 +191,13 @@ class DebugController:
 
             u = uart if uart is not None else Uart()
             base = MMIO_BASE_DEFAULT if mmio_base is None else mmio_base
-            mem = SystemBus(ram, mmio_base=base, uart=u)
+            mem = SystemBus(
+                ram,
+                mmio_base=base,
+                uart=u,
+                sd_image=sd_image,
+                sd_create_sectors=sd_create_sectors,
+            )
         else:
             mem = ram
         cycle_counter = CycleCounter()
@@ -251,6 +282,15 @@ class DebugController:
     def feed_uart_rx(self, data: bytes) -> None:
         if isinstance(self.mem, SystemBus):
             self.mem.uart.feed_rx(data)
+
+    def attach_sd_image(self, path: Path, *, create_sectors: int | None = None) -> None:
+        if not isinstance(self.mem, SystemBus):
+            raise TypeError("MMIO bus required for SD")
+        self.mem.sd.mount(path, create_sectors=create_sectors)
+
+    def detach_sd_image(self) -> None:
+        if isinstance(self.mem, SystemBus):
+            self.mem.sd.unmount()
 
     def write_ram_word(self, addr: int, value: int) -> None:
         """Write a word only to backing RAM (not MMIO). Address must be word-aligned and in range."""

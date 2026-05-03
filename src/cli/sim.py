@@ -26,8 +26,16 @@ def main() -> None:
     p.add_argument("--max-steps", type=int, default=100_000)
     p.add_argument("--dump-regs", action="store_true")
     p.add_argument("--dump-gpio", action="store_true", help="Print GPIO_OUT after run (uses MMIO bus)")
-    p.add_argument("--mmio", action="store_true", help="Use SystemBus with GPIO/UART/Timer")
+    p.add_argument("--mmio", action="store_true", help="Use SystemBus with GPIO/UART/Timer/SD")
     p.add_argument("--mmio-base", type=lambda x: int(x, 0), default=MMIO_BASE_DEFAULT, help="MMIO base address")
+    p.add_argument("--sd-image", type=Path, default=None, help="SD block image (implies MMIO bus)")
+    p.add_argument(
+        "--sd-create-sectors",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Create/truncate --sd-image to N×512 bytes",
+    )
     p.add_argument("--cycle-ns", type=float, default=None, help="Approximate nanoseconds per cycle (report only)")
     p.add_argument("--uart-stdout", action="store_true", help="Mirror UART TX bytes to stdout (binary)")
     p.add_argument("--trace", action="store_true", help="Print one line per executed instruction")
@@ -36,12 +44,18 @@ def main() -> None:
     args = p.parse_args()
 
     ram = Memory()
-    use_bus = args.mmio or args.dump_gpio or args.uart_stdout
+    use_bus = args.mmio or args.dump_gpio or args.uart_stdout or args.sd_image is not None
     if use_bus:
         uart = Uart()
         if args.uart_stdout:
             uart.write_stream_hook(sys.stdout.buffer)
-        mem: Memory | SystemBus = SystemBus(ram, mmio_base=args.mmio_base, uart=uart)
+        mem = SystemBus(
+            ram,
+            mmio_base=args.mmio_base,
+            uart=uart,
+            sd_image=args.sd_image,
+            sd_create_sectors=args.sd_create_sectors,
+        )
     else:
         mem = ram
 

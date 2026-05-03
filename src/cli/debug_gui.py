@@ -68,12 +68,15 @@ class DebuggerApp(tk.Tk):
         self._tab_mmio = ttk.Frame(nb)
         self._tab_trace = ttk.Frame(nb)
         self._tab_bp = ttk.Frame(nb)
+        self._tab_storage = ttk.Frame(nb)
         nb.add(self._tab_main, text="CPU / Memory")
         nb.add(self._tab_mmio, text="MMIO")
+        nb.add(self._tab_storage, text="Storage")
         nb.add(self._tab_trace, text="Trace")
         nb.add(self._tab_bp, text="Breakpoints")
         self._build_main_tab(self._tab_main)
         self._build_mmio_tab(self._tab_mmio)
+        self._build_storage_tab(self._tab_storage)
         self._build_trace_tab(self._tab_trace)
         self._build_bp_tab(self._tab_bp)
         self._apply_density_mode()
@@ -456,6 +459,27 @@ class DebuggerApp(tk.Tk):
         ttk.Entry(rx_f, textvariable=self._var_rx, width=40).pack(side=tk.LEFT, padx=4)
         ttk.Button(rx_f, text="Send to RX queue", command=self._on_feed_rx).pack(side=tk.LEFT)
 
+    def _build_storage_tab(self, parent: ttk.Frame) -> None:
+        ttk.Label(
+            parent,
+            text="SD / block device (see docs/mmio.md). Requires session with MMIO (--mmio).",
+        ).pack(anchor=tk.W, padx=4, pady=2)
+        self._var_sd_path = tk.StringVar()
+        row = ttk.Frame(parent)
+        row.pack(fill=tk.X, padx=4, pady=4)
+        ttk.Entry(row, textvariable=self._var_sd_path, width=50).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(row, text="Browse…", command=self._on_sd_browse).pack(side=tk.LEFT, padx=4)
+        row2 = ttk.Frame(parent)
+        row2.pack(fill=tk.X, padx=4)
+        ttk.Button(row2, text="Mount", command=self._on_sd_mount).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row2, text="Unmount", command=self._on_sd_umount).pack(side=tk.LEFT, padx=2)
+        ttk.Label(row2, text="Create empty (sectors):").pack(side=tk.LEFT, padx=(16, 0))
+        self._var_sd_sectors = tk.StringVar(value="8")
+        ttk.Entry(row2, textvariable=self._var_sd_sectors, width=8).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row2, text="Create & mount", command=self._on_sd_create_mount).pack(side=tk.LEFT, padx=4)
+        self._sd_info = tk.Text(parent, height=14, width=80, font=FONT_MONO, state=tk.DISABLED)
+        self._sd_info.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+
     def _build_trace_tab(self, parent: ttk.Frame) -> None:
         bf = ttk.Frame(parent)
         bf.pack(fill=tk.X)
@@ -688,6 +712,62 @@ class DebuggerApp(tk.Tk):
         self._pending_status = f"Fed {len(data)} bytes to UART RX"
         self.refresh()
 
+    def _on_sd_browse(self) -> None:
+        p = filedialog.askopenfilename(
+            parent=self,
+            title="SD image file",
+            filetypes=[("Image", "*.img *.bin"), ("All", "*.*")],
+        )
+        if p:
+            self._var_sd_path.set(p)
+
+    def _on_sd_mount(self) -> None:
+        if not isinstance(self._ctrl.mem, SystemBus):
+            messagebox.showinfo("Storage", "Start with --mmio to use SD.", parent=self)
+            return
+        raw = self._var_sd_path.get().strip()
+        if not raw:
+            messagebox.showwarning("Storage", "Choose a file path first.", parent=self)
+            return
+        try:
+            self._ctrl.attach_sd_image(Path(raw))
+        except (OSError, ValueError) as e:
+            messagebox.showerror("Storage", str(e), parent=self)
+            return
+        self._pending_status = f"SD mounted: {raw}"
+        self.refresh()
+
+    def _on_sd_umount(self) -> None:
+        if not isinstance(self._ctrl.mem, SystemBus):
+            return
+        self._ctrl.detach_sd_image()
+        self._pending_status = "SD unmounted"
+        self.refresh()
+
+    def _on_sd_create_mount(self) -> None:
+        if not isinstance(self._ctrl.mem, SystemBus):
+            messagebox.showinfo("Storage", "Start with --mmio.", parent=self)
+            return
+        raw = self._var_sd_path.get().strip()
+        if not raw:
+            messagebox.showwarning("Storage", "Set path for new image file.", parent=self)
+            return
+        try:
+            n = int(self._var_sd_sectors.get().strip(), 0)
+        except ValueError:
+            messagebox.showerror("Storage", "Invalid sector count", parent=self)
+            return
+        if n < 1:
+            messagebox.showerror("Storage", "Need at least 1 sector", parent=self)
+            return
+        try:
+            self._ctrl.attach_sd_image(Path(raw), create_sectors=n)
+        except (OSError, ValueError) as e:
+            messagebox.showerror("Storage", str(e), parent=self)
+            return
+        self._pending_status = f"SD created {n} sectors: {raw}"
+        self.refresh()
+
     def _on_bp_add(self) -> None:
         try:
             a = self._parse_hex_int(self._var_bp.get())
@@ -733,6 +813,7 @@ class DebuggerApp(tk.Tk):
         if full:
             self._fill_mmio(snap.mmio)
             self._fill_trace(snap.trace)
+        self._fill_storage(snap.mmio)
         self._refresh_bp_list()
         self._var_page.set(hex(self._ctrl.mem_page_base))
         parts = [
@@ -860,9 +941,35 @@ class DebuggerApp(tk.Tk):
                 f"  compare = 0x{mm.timer_compare_hi:08x}{mm.timer_compare_lo:08x}",
                 f"  ctrl    = 0x{mm.timer_ctrl:08x}",
                 "",
+                f"SD / block @ 0x{mm.mmio_base + 0x3000:08x}",
+                f"  path: {mm.sd.path or '(none)'}  mounted={mm.sd.mounted}",
+                f"  LBA=0x{mm.sd.lba:08x}  STATUS=0x{mm.sd.status:04x}  err={mm.sd.err_code}  sectors={mm.sd.sectors}",
+                f"  buf[0..15]: {mm.sd.buffer_preview}",
+                "",
             ]
             self._mmio_text.insert(tk.END, "\n".join(lines))
         self._mmio_text.configure(state=tk.DISABLED)
+
+    def _fill_storage(self, mm: MmioSnapshot | None) -> None:
+        self._sd_info.configure(state=tk.NORMAL)
+        self._sd_info.delete("1.0", tk.END)
+        if mm is None:
+            self._sd_info.insert(tk.END, "No MMIO — use --mmio to enable GPIO/UART/Timer/SD.\n")
+        else:
+            sd = mm.sd
+            lines = [
+                f"path: {sd.path or '(none)'}",
+                f"mounted: {sd.mounted}",
+                f"LBA register: 0x{sd.lba:08x}",
+                f"STATUS word: 0x{sd.status:04x}  error code: {sd.err_code}",
+                f"sectors (file): {sd.sectors}",
+                f"sector buffer preview (first 16 bytes, hex): {sd.buffer_preview}",
+                "",
+                "Mount replaces the current backing file; Unmount closes it.",
+                "See docs/mmio.md for CTRL (1=read sector, 2=write, 3=flush) and DATA aperture.",
+            ]
+            self._sd_info.insert(tk.END, "\n".join(lines))
+        self._sd_info.configure(state=tk.DISABLED)
 
     def _fill_trace(self, trace: list[object]) -> None:
         for x in self._tv_trace.get_children():
@@ -888,12 +995,27 @@ def main() -> None:
     p.add_argument("--load-addr", type=lambda x: int(x, 0), default=0)
     p.add_argument("--hex", type=Path, help="Hex words file")
     p.add_argument("--bin", type=Path, help="Binary image")
-    p.add_argument("--mmio", action="store_true", help="SystemBus with GPIO/UART/Timer")
+    p.add_argument("--mmio", action="store_true", help="SystemBus with GPIO/UART/Timer/SD")
     p.add_argument("--mmio-base", type=lambda x: int(x, 0), default=MMIO_BASE_DEFAULT)
+    p.add_argument("--sd-image", type=Path, default=None, help="SD image file (implies --mmio)")
+    p.add_argument(
+        "--sd-create-sectors",
+        type=int,
+        default=None,
+        help="With --sd-image: create/truncate image with N sectors (512 bytes each)",
+    )
     args = p.parse_args()
 
+    use_mmio = args.mmio or args.sd_image is not None
     ram = Memory()
-    ctrl = DebugController.create(ram=ram, use_mmio=args.mmio, mmio_base=args.mmio_base, load_addr=args.load_addr)
+    ctrl = DebugController.create(
+        ram=ram,
+        use_mmio=use_mmio,
+        mmio_base=args.mmio_base,
+        load_addr=args.load_addr,
+        sd_image=args.sd_image,
+        sd_create_sectors=args.sd_create_sectors,
+    )
     if args.bin:
         ctrl.load_binary_file(args.bin)
         ctrl.reset_cpu(preserve_breakpoints=True)

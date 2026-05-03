@@ -16,7 +16,16 @@ dependencies = [
 dev = [
   "pytest>=7.0",
   "hypothesis>=6.0",
+  "ruff>=0.8",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
 
 [project.scripts]
 e32c-debug-gui = "cli.debug_gui:main"
