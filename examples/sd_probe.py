@@ -17,7 +17,7 @@ if str(SRC) not in sys.path:
 
 from core.bus import MMIO_BASE_DEFAULT, SD_OFFSET, SystemBus
 from core.memory import Memory
-from core.peripherals.sd_card import CMD_READ, CMD_WRITE, DATA_BASE, REG_CTRL, REG_LBA, REG_STATUS, ST_ERROR
+from core.peripherals.sd_card import CMD_READ, CMD_WRITE, DATA_BASE, REG_CTRL, REG_LBA, ST_ERROR
 
 
 def main() -> None:
