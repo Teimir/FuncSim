@@ -64,6 +64,18 @@ def test_format_spr() -> None:
     assert format_instruction(ins) == "READSPR r1 5"
 
 
+def test_format_branch_cond_beq() -> None:
+    ins = decode_word(0x600A0200)
+    assert ins.mnemonic == "BJ"
+    assert format_instruction(ins) == "BEQ r5 8"
+
+
+def test_format_writespr() -> None:
+    ins = decode_word(0x64202800)
+    assert ins.mnemonic == "WRITESPR"
+    assert format_instruction(ins) == "WRITESPR r1 5"
+
+
 def test_disassemble_illegal_word() -> None:
     s = disassemble_word(0x00000001)
     assert "0x00000001" in s

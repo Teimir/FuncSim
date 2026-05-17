@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Create a small SD image, write sector 0 from Python via MMIO, read it back (regression helper).
 
+ABI для asm-программ: R30 = SP, R31 = PC (docs/isa/spec.md).
+
 Run from repo root:
   python examples/sd_probe.py
 """

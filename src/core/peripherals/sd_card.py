@@ -6,6 +6,7 @@ import struct
 from pathlib import Path
 from typing import BinaryIO
 
+from core.mmio_constants import SD_REGION_SIZE
 
 SECTOR_SIZE = 512
 WORD_COUNT = SECTOR_SIZE // 4
@@ -15,7 +16,7 @@ REG_CTRL = 0x00
 REG_STATUS = 0x04
 REG_LBA = 0x08
 DATA_BASE = 0x10
-REGION_SIZE = DATA_BASE + SECTOR_SIZE  # 0x210
+REGION_SIZE = SD_REGION_SIZE  # must match docs/isa/mmio_map.yaml (gen_mmio)
 
 # CTRL command (low byte of written word)
 CMD_READ = 1

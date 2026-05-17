@@ -1,4 +1,5 @@
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
@@ -12,3 +13,9 @@ htmlcov/
 venv/
 .env
 *.trace
+
+# FPGA / simulation artifacts (under test/)
+test/impl/
+test/out_*.vvp
+test/build_*.vvp
+*.vvp

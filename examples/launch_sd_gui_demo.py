@@ -7,6 +7,8 @@ Run from repo root:
 The program at 0x200 writes 0xDEADC0DE to LBA 0, reads it back, and sets GPIO
 MMIO to 1 on success or 2 on failure (then HALT). Step in the GUI to watch SD
 registers on the Storage tab.
+
+Assembler source follows docs/isa/spec.md (R30=SP, R31=PC; demo uses CMP/MOV).
 """
 
 from __future__ import annotations

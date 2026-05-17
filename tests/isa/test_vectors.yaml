@@ -1,5 +1,5 @@
 # Single-step vectors: initial state -> expected after one step
-# Registers r0..r31 as list; pc is r31; flags integer (bit0 Intenable, bit1 Zero, ...)
+# Registers r0..r31; pc is r31. Optional: asm (instead of word), spr, bus: mmio
 
 - name: nop_advances_pc
   mem: {}
@@ -22,34 +22,175 @@
     halted: true
 
 - name: add_r1_r2_res
-  # ADD: opcode 100001 at [31:26], r1=1, r2=2, res=3
-  # encoding: 0x21<<26 | 1<<21 | 2<<16 | 3<<11 = 0x84221800
-  mem: {}
   word: 0x84221800
   pc: 0x0
   regs: [0, 5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   flags: 0
   expect:
-    regs:
-      3: 12
+    regs: {3: 12}
+    pc: 4
+
+- name: sub_rrr
+  asm: "SUB 1 2 3"
+  pc: 0
+  regs: [0, 10, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 7}
+    pc: 4
+
+- name: and_or_xor
+  asm: "AND 1 2 3"
+  pc: 0
+  regs: [0, 0xF0, 0xCC, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0xC0}
     pc: 4
 
 - name: adds_sets_flags_zero
-  # ADDS r1=1 r2=2 res=3, values 0 and 0 -> Z=1
-  mem: {}
   word: 0x8C221800
   pc: 0x0
   regs: [0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   flags: 0
   expect:
-    regs:
-      3: 0
+    regs: {3: 0}
     flags_mask: 0b11110
-    flags_expected: 0b010  # Zero bit1 = 2
+    flags_expected: 0b010
+
+- name: subs_overflow_v
+  asm: "SUBS 1 2 3"
+  pc: 0
+  regs: [0, 0x80000000, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0x7FFFFFFF}
+    flags_mask: 0b11110
+    flags_expected: 0b01100
+    pc: 4
+
+- name: adcs_with_carry
+  asm: "ADCS 1 2 3"
+  pc: 0
+  regs: [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 4
+  expect:
+    regs: {3: 3}
+    pc: 4
+
+- name: sbcs_borrow
+  asm: "SBCS 1 2 3"
+  pc: 0
+  regs: [0, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 2}
+    pc: 4
+
+- name: ands_zs
+  asm: "ANDS 1 2 3"
+  pc: 0
+  regs: [0, 0x80000000, 0x80000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0x80000000}
+    flags_mask: 0b11110
+    flags_expected: 0b10000
+    pc: 4
+
+- name: bic_mvn_neg
+  asm: "BIC 1 2 3"
+  pc: 0
+  regs: [0, 0xFFFFFFFF, 0x0F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0xFFFFFFF0}
+    pc: 4
+
+- name: mvn_neg
+  asm: "MVN 0 2 3"
+  pc: 0
+  regs: [0, 0, 0x55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0xFFFFFFAA}
+    pc: 4
+
+- name: sll_slr
+  asm: "SLL 1 2 3"
+  pc: 0
+  regs: [0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 16}
+    pc: 4
+
+- name: rol_ror
+  asm: "ROL 1 2 3"
+  pc: 0
+  regs: [0, 0x80000001, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0x00000003}
+    pc: 4
+
+- name: smul
+  asm: "SMUL 1 2 3"
+  pc: 0
+  regs: [0, 0xFFFFFFFF, 0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 1}
+    pc: 4
+
+- name: mul_umull
+  asm: "UMULL 1 2 3 4"
+  pc: 0
+  regs: [0, 0x10000, 0x10000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 0, 4: 1}
+    pc: 4
+
+- name: smull
+  asm: "SMULL 1 2 3 4"
+  pc: 0
+  regs: [0, 0xFFFFFFFF, 0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {3: 1, 4: 0}
+    pc: 4
+
+- name: mla
+  asm: "MLA 1 2 3 4"
+  pc: 0
+  regs: [0, 3, 4, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {4: 22}
+    pc: 4
+
+- name: addi_subi
+  asm: "ADDI 1 2 4"
+  pc: 0
+  regs: [0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {2: 14}
+    pc: 4
+
+- name: addsi
+  asm: "ADDSI 1 2 1"
+  pc: 0
+  regs: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {2: 2}
+    flags_mask: 0b11110
+    flags_expected: 0b00000
+    pc: 4
 
 - name: jmp_sets_pc
-  # JMP raddr=5 imm11=4 -> target = R5 + 4  (0x10+4=0x14)
-  mem: {}
   word: 0x40A00004
   pc: 0x1000
   regs: [0, 0, 0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1000]
@@ -57,15 +198,102 @@
   expect:
     pc: 0x14
 
+- name: jnz_not_taken
+  asm: "JNZ 5 0"
+  pc: 0x1000
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1000]
+  flags: 2
+  expect:
+    pc: 0x1004
+
+- name: beq_taken
+  asm: "BEQ 5 4"
+  pc: 0x1000
+  regs: [0, 0, 0, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1000]
+  flags: 2
+  expect:
+    pc: 0x24
+
+- name: bhi_taken
+  asm: "BHI 5 0"
+  pc: 0
+  regs: [0, 0, 0, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 4
+  expect:
+    pc: 0x40
+
+- name: blt_taken
+  asm: "BLT 5 8"
+  pc: 0
+  regs: [0, 0, 0, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 16
+  expect:
+    pc: 0x48
+
 - name: ldr_masked
-  mem:
-    0x1000: 0xAABBCCDD
+  mem: {0x1000: 0xAABBCCDD}
   word: 0x0422A800
-  # LDR: raddr=1, rdest=2, mask=0x15, imm=0
   pc: 0x0
   regs: [0, 0x1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   flags: 0
   expect:
-    regs:
-      2: 0x00BB00DD
+    regs: {2: 0x00BB00DD}
     pc: 4
+
+- name: ldrpost
+  asm: "LDRPOST 1 2 15 4"
+  mem: {0x2000: 0x12345678}
+  pc: 0
+  regs: [0, 0x2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {1: 0x2004, 2: 0x12345678}
+    pc: 4
+
+- name: strpost
+  asm: "STRPOST 1 2 15 8"
+  mem: {0x3000: 0}
+  pc: 0
+  regs: [0, 0x3000, 0xAABBCCDD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    regs: {1: 0x3008}
+    mem: {0x3000: 0xAABBCCDD}
+    pc: 4
+
+- name: ldr_misalign
+  asm: "LDR 1 2 15 1"
+  pc: 0
+  regs: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    exception: MisalignedAccess
+
+- name: ei_di
+  asm: "EI"
+  pc: 0
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  flags: 0
+  expect:
+    flags_mask: 1
+    flags_expected: 1
+    pc: 4
+
+- name: readspr
+  asm: "READSPR 2 1"
+  pc: 0
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spr: {1: 0x8000}
+  flags: 0
+  expect:
+    regs: {2: 0x8000}
+    pc: 4
+
+- name: iret
+  asm: "IRET"
+  pc: 0
+  regs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spr: {0: 0x5000}
+  flags: 0
+  expect:
+    pc: 0x5000

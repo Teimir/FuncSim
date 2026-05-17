@@ -6,7 +6,7 @@ from core import flags as F
 from core.bus import MMIO_BASE_DEFAULT, SystemBus
 from core.cycles import CycleCounter
 from core.memory import Memory
-from core.state import CPUState, SPR_IRQ_VECTOR
+from core.state import SPR_IRQ_VECTOR, CPUState
 
 
 def test_gpio_bus_read_write() -> None:
@@ -28,6 +28,22 @@ def test_uart_tx_buffer() -> None:
     bus.write_word(base + 0, 0x42)
     assert bytes(bus.uart.tx_buffer) == b"AB"
     assert bus.read_word(base + 8) & 0x2  # TX idle
+
+
+def test_uart_tx_feeds_rx_loopback_hook() -> None:
+    captured: list[int] = []
+
+    def hook(b: int) -> None:
+        captured.append(b & 0xFF)
+
+    ram = Memory(256)
+    bus = SystemBus(ram)
+    bus.set_cycle_counter(CycleCounter())
+    bus.uart.set_on_tx_byte(hook)
+    base = MMIO_BASE_DEFAULT + 0x1000
+    bus.write_word(base + 0, 0x55)
+    bus.uart.feed_rx(bytes(captured))
+    assert bus.read_word(base + 4) & 0xFF == 0x55
 
 
 def test_uart_rx_queue() -> None:
@@ -54,23 +70,25 @@ def test_timer_irq_once_pending_blocks() -> None:
     bus.write_word(tbase + 12, 0)
     bus.write_word(tbase + 16, 1)
 
-    ctr.add(2)
+    bus.on_step_end(1, st, 0x100)
     bus.on_step_end(2, st, 0x100)
     assert st.pc == 0x8000
     assert st.spr_read(0) == 0x100
     assert bus.timer.read_reg(16) & 0x2
 
-    st.set_pc(0x200)
-    bus.on_step_end(3, st, 0x204)
-    assert st.pc == 0x200
-
     bus.write_word(tbase + 16, 1 | 4)
-    bus.on_step_end(5, st, 0x300)
+    st.irq_in_service = False
+    assert not (bus.timer.read_reg(16) & 2)
+    st.set_pc(0x200)
+    bus.write_word(tbase + 8, 2)
+    bus.write_word(tbase + 12, 0)
+    bus.write_word(tbase + 16, 1)
+    bus.on_step_end(4, st, 0x204)
     assert st.pc == 0x8000
 
 
-def test_timer_no_pending_before_cpu_intenable() -> None:
-    """Match compare + IRQ_EN but Intenable off: no PENDING; IRQ fires once EI-equivalent is set."""
+def test_timer_pending_before_irq_until_intenable() -> None:
+    """Compare match sets PENDING; IRQ delivery waits for CPU Intenable (EI)."""
     ram = Memory(256)
     bus = SystemBus(ram)
     ctr = CycleCounter()
@@ -81,9 +99,10 @@ def test_timer_no_pending_before_cpu_intenable() -> None:
     bus.write_word(tbase + 8, 2)
     bus.write_word(tbase + 12, 0)
     bus.write_word(tbase + 16, 1)
-    ctr.add(3)
-    bus.on_step_end(3, st, 0x100)
-    assert not (bus.timer.read_reg(16) & 0x2)
+    bus.on_step_end(1, st, 0x100)
+    bus.on_step_end(2, st, 0x100)
+    assert bus.timer.read_reg(16) & 0x2
+    assert st.pc != 0x800
     st.flags |= F.FLAG_INTENABLE
     bus.on_step_end(3, st, 0x200)
     assert st.pc == 0x800

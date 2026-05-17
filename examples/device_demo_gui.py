@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Open the tkinter debugger with the same image as device_demo.py (MMIO + IRQ + UART + timer).
 
+ABI: R30=SP, R31=PC (docs/isa/spec.md); demo obeys this in asm (timer snapshot in r7).
+
 From repo root:
   python examples/device_demo_gui.py
 """

@@ -1,8 +1,8 @@
+from core import flags as F
 from core.decode import decode_word
 from core.execute import execute
 from core.memory import Memory
 from core.state import CPUState
-from core import flags as F
 
 
 def test_jmp_sets_pc_explicit() -> None:

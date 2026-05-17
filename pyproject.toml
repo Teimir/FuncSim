@@ -14,17 +14,26 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7.0",
-  "hypothesis>=6.0",
-  "ruff>=0.8",
+  "pytest>=8.0",
+  "pytest-cov>=4.0",
+  "hypothesis>=6.100",
+  "ruff>=0.9",
 ]
+
+[tool.coverage.run]
+source = ["core"]
+omit = ["*/cli/*"]
+
+[tool.coverage.report]
+fail_under = 83
+show_missing = true
 
 [tool.ruff]
 line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
+select = ["E", "F", "I", "UP", "W"]
 ignore = ["E501"]
 
 # Example launchers mutate sys.path before importing from src; import blocks stay unsorted on purpose.
@@ -32,7 +41,7 @@ ignore = ["E501"]
 "examples/**" = ["E402", "I001"]
 
 [project.scripts]
-e32c-debug-gui = "cli.debug_gui:main"
+e32c-debug-gui = "cli.debug_gui.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -40,3 +49,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+  "slow: property-based and long integration tests (run with verify_all --full)",
+]

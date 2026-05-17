@@ -8,11 +8,39 @@ from core.bus import SystemBus
 from core.cycles import CycleCounter, cycles_for_mnemonic
 from core.decode import decode_word
 from core.disasm import format_instruction
-from core.exceptions import BreakpointHit, CpuHalted
+from core.exceptions import BreakpointHit, CpuHalted, WatchpointHit
 from core.execute import execute
 from core.mem_if import WordMemory
 from core.state import CPUState
 from core.trace import StepTrace
+
+
+class _WatchMem:
+    """Delegate WordMemory with optional read/write watch addresses."""
+
+    def __init__(
+        self,
+        inner: WordMemory,
+        *,
+        watch_read: set[int] | None = None,
+        watch_write: set[int] | None = None,
+    ) -> None:
+        self._inner = inner
+        self._watch_read = watch_read or set()
+        self._watch_write = watch_write or set()
+
+    def read_word(self, addr: int) -> int:
+        if addr in self._watch_read:
+            raise WatchpointHit(addr, "read")
+        return self._inner.read_word(addr)
+
+    def write_word(self, addr: int, value: int) -> None:
+        if addr in self._watch_write:
+            raise WatchpointHit(addr, "write")
+        self._inner.write_word(addr, value)
+
+    def __getattr__(self, name: str):
+        return getattr(self._inner, name)
 
 
 class Runner:
@@ -23,9 +51,13 @@ class Runner:
         *,
         cycle_counter: CycleCounter | None = None,
         break_pcs: set[int] | None = None,
+        watch_read: set[int] | None = None,
+        watch_write: set[int] | None = None,
         on_step: Callable[[StepTrace], None] | None = None,
     ) -> None:
         self.state = state
+        if watch_read or watch_write:
+            mem = _WatchMem(mem, watch_read=watch_read, watch_write=watch_write)
         self.mem = mem
         self.cycle_counter = cycle_counter if cycle_counter is not None else CycleCounter()
         self.break_pcs: set[int] = set(break_pcs) if break_pcs else set()

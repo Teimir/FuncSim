@@ -3,11 +3,22 @@ import pytest
 from core.asm import assemble_line, assemble_text
 from core.decode import decode_word
 from core.disasm import disassemble_word, format_instruction
+from core.exceptions import BreakpointHit
+from core.memory import Memory
+from core.runner import Runner
+from core.state import CPUState
 
 
 def test_disassemble_smoke() -> None:
     assert "NOP" in disassemble_word(0)
     assert "HALT" in disassemble_word(0xFFFFFFFF)
+
+
+def test_asm_cmn_expands_to_adds_r0() -> None:
+    w = assemble_line("CMN 4 5")
+    ins = decode_word(w)
+    assert ins.mnemonic == "ADDS"
+    assert ins.fields["r1"] == 4 and ins.fields["r2"] == 5 and ins.fields["res"] == 0
 
 
 def test_asm_add_roundtrip() -> None:
@@ -31,18 +42,10 @@ def test_assemble_program() -> None:
 
 
 def test_breakpoint_import() -> None:
-    from core.exceptions import BreakpointHit
-
     assert BreakpointHit(4).pc == 4
 
 
 def test_runner_breakpoint_before_fetch() -> None:
-    from core.exceptions import BreakpointHit
-
-    from core.memory import Memory
-    from core.runner import Runner
-    from core.state import CPUState
-
     mem = Memory(64)
     mem.write_word(0, 0x00000000)
     mem.write_word(4, 0xFFFFFFFF)

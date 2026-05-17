@@ -6,6 +6,8 @@ from core.decode import decode_word
 from core.exceptions import IllegalInstruction
 from core.instruction import Instruction
 
+_COND_NAMES = ("EQ", "NE", "CS", "CC", "MI", "PL", "VS", "VC", "HI", "LS", "GE", "LT", "GT", "LE", "AL", "NV")
+
 
 def _imm11_signed(v: int) -> int:
     v &= 0x7FF
@@ -39,6 +41,9 @@ def format_instruction(ins: Instruction) -> str:
     if f == "mul":
         return f"{m} r{fld['r1']} r{fld['r2']} r{fld['res']} r{fld['resh']}"
 
+    if f == "mla":
+        return f"{m} r{fld['r1']} r{fld['r2']} r{fld['racc']} r{fld['res']}"
+
     if f == "imm16":
         imm = _imm32_signed(int(fld["imm32"]))
         return f"{m} r{fld['r1']} r{fld['res']} {imm}"
@@ -46,6 +51,12 @@ def format_instruction(ins: Instruction) -> str:
     if f in ("branch",):
         imm = _imm11_signed(int(fld["imm11"]))
         return f"{m} r{fld['raddr']} {imm}"
+
+    if f == "branch_cond":
+        imm = _imm11_signed(int(fld["imm11"]))
+        c = int(fld["cond"])
+        cname = _COND_NAMES[c] if 0 <= c < len(_COND_NAMES) else "NV"
+        return f"B{cname} r{fld['raddr']} {imm}"
 
     if f == "load_store":
         imm = _imm11_signed(int(fld["imm11"]))
@@ -56,7 +67,8 @@ def format_instruction(ins: Instruction) -> str:
         return f"{m} r{fld['raddr']} r{fld['rdata']} {fld['mask']} {imm}"
 
     if f == "spr":
-        return f"{m} r{fld['r1']} {fld['spr']}"
+        op = "READSPR" if m == "READSPR" else "WRITESPR"
+        return f"{op} r{fld['r1']} {fld['spr']}"
 
     return f"{m} <{f}>"
 

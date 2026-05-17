@@ -23,3 +23,12 @@ class BreakpointHit(CpuError):
     def __init__(self, pc: int) -> None:
         super().__init__(f"breakpoint hit at 0x{pc:x}")
         self.pc = pc
+
+
+class WatchpointHit(CpuError):
+    """Memory access hit a watch address."""
+
+    def __init__(self, addr: int, kind: str) -> None:
+        super().__init__(f"watchpoint {kind} at 0x{addr:x}")
+        self.addr = addr
+        self.kind = kind

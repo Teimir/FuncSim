@@ -8,6 +8,11 @@ from core import flags as F
 
 SPR_SAVED_IRQ_PC = 0
 SPR_IRQ_VECTOR = 1
+# Бит i = 1: линия прерывания i замаскирована (не доставляется). 0 = все линии разрешены.
+SPR_IRQ_MASK = 2
+
+# Соглашение ABI (программное): указатель стека — **R30**. Аппаратно это обычный GPR.
+GPR_STACK_POINTER = 30
 
 
 @dataclass
@@ -18,6 +23,9 @@ class CPUState:
     flags: int = 0
     halted: bool = False
     spr: dict[int, int] = field(default_factory=dict)
+    irq_in_service: bool = False
+    exclusive_addr: int | None = None
+    exclusive_valid: bool = False
 
     def __post_init__(self) -> None:
         if len(self.regs) != 32:
@@ -47,9 +55,16 @@ class CPUState:
     def spr_write(self, index: int, value: int) -> None:
         self.spr[index] = value & 0xFFFFFFFF
 
-    def raise_irq(self, return_pc: int) -> None:
-        """Simplified IRQ: save return PC and jump to vector if interrupts enabled."""
+    def raise_irq(self, return_pc: int, line: int = 0) -> None:
+        """Save return PC and jump to IRQ vector (RTL: blocked while irq_in_service)."""
+        if self.irq_in_service:
+            return
         if not (self.flags & F.FLAG_INTENABLE):
             return
+        if line < 0 or line > 31:
+            raise ValueError(f"irq line must be 0..31, got {line}")
+        if self.spr_read(SPR_IRQ_MASK) & (1 << line):
+            return
+        self.irq_in_service = True
         self.spr_write(SPR_SAVED_IRQ_PC, return_pc & 0xFFFFFFFF)
         self.set_pc(self.spr_read(SPR_IRQ_VECTOR))

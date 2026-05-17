@@ -1,10 +1,9 @@
-"""Cycle compare timer with optional IRQ via CPUState.raise_irq."""
+"""Cycle timer (RTL apb_timer: counter/period @+8/+12, CTRL @+16, IRQ line level)."""
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
-from core import flags as F
 from core.state import CPUState
 
 GetCycles = Callable[[], int]
@@ -17,31 +16,30 @@ class CycleTimer:
 
     __slots__ = (
         "_get_cycles",
-        "_compare",
+        "_last_cycles",
+        "_counter",
+        "_period",
         "_irq_en",
         "_pending",
     )
 
     def __init__(self, get_cycles: GetCycles) -> None:
         self._get_cycles = get_cycles
-        self._compare = 0
+        self._last_cycles = 0
+        self._counter = 0
+        self._period = 27_000_000
         self._irq_en = False
         self._pending = False
 
-    @property
-    def compare(self) -> int:
-        return self._compare
-
     def read_reg(self, offset: int) -> int:
-        c = self._get_cycles() & ((1 << 64) - 1)
         if offset == 0:
-            return c & 0xFFFFFFFF
+            return self._counter & 0xFFFFFFFF
         if offset == 4:
-            return (c >> 32) & 0xFFFFFFFF
-        if offset == 8:
-            return self._compare & 0xFFFFFFFF
-        if offset == 12:
-            return (self._compare >> 32) & 0xFFFFFFFF
+            return 0
+        if offset in (8, 24):
+            return self._period & 0xFFFFFFFF
+        if offset in (12, 28):
+            return (self._period >> 16) & 0xFFFF
         if offset == 16:
             st = 0
             if self._irq_en:
@@ -53,22 +51,33 @@ class CycleTimer:
 
     def write_reg(self, offset: int, value: int) -> None:
         v = value & 0xFFFFFFFF
-        if offset == 8:
-            self._compare = (self._compare & 0xFFFF_FFFF_0000_0000) | v
-        elif offset == 12:
-            self._compare = (self._compare & 0xFFFF_FFFF) | (v << 32)
+        if offset in (8, 24):
+            self._period = (self._period & 0xFFFF_0000) | v
+        elif offset in (12, 28):
+            self._period = (self._period & 0xFFFF) | ((v & 0xFFFF) << 16)
         elif offset == 16:
             self._irq_en = bool(v & self.CTRL_IRQ_EN)
             if v & self.CTRL_ACK_W1C:
                 self._pending = False
+                self._counter = 0
+        elif offset in (0, 4):
+            pass
 
     def process(self, total_cycles: int, state: CPUState, return_pc: int) -> None:
-        """After incrementing global cycle count; may call raise_irq once."""
-        if self._pending or not self._irq_en:
+        """Advance counter by retired cycles; deliver IRQ when line active (RTL level model)."""
+        delta = total_cycles - self._last_cycles
+        self._last_cycles = total_cycles
+        if delta <= 0:
+            delta = 1
+        self._counter = (self._counter + delta) & 0xFFFFFFFF
+        if self._period == 0:
             return
-        if total_cycles < self._compare:
+        if not self._pending and self._counter >= self._period:
+            self._pending = True
+        if not self._pending or not self._irq_en:
             return
-        if not (state.flags & F.FLAG_INTENABLE):
+        from core import flags as F
+
+        if not (state.flags & F.FLAG_INTENABLE) or state.irq_in_service:
             return
-        self._pending = True
-        state.raise_irq(return_pc)
+        state.raise_irq(return_pc, line=0)

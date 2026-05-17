@@ -24,6 +24,8 @@ def main() -> None:
     p.add_argument("--hex", type=Path, help="Text file: one 32-bit hex word per line")
     p.add_argument("--asm", type=Path, help="Assembler source (one instruction per line)")
     p.add_argument("--max-steps", type=int, default=100_000)
+    p.add_argument("--until-halt", action="store_true", help="Run until HALT (still bounded by --max-steps)")
+    p.add_argument("--cycles-report", action="store_true", help="Print total cycle count after run")
     p.add_argument("--dump-regs", action="store_true")
     p.add_argument("--dump-gpio", action="store_true", help="Print GPIO_OUT after run (uses MMIO bus)")
     p.add_argument("--mmio", action="store_true", help="Use SystemBus with GPIO/UART/Timer/SD")

@@ -1,5 +1,5 @@
 from core import flags as F
-from core.state import CPUState
+from core.state import SPR_IRQ_MASK, CPUState
 
 
 def test_r0_read_zero_write_ignored() -> None:
@@ -29,3 +29,14 @@ def test_raise_irq_when_enabled() -> None:
     s.raise_irq(return_pc=0x104)
     assert s.spr_read(0) == 0x104
     assert s.pc == 0x4000
+
+
+def test_raise_irq_masked_line0() -> None:
+    s = CPUState()
+    s.flags |= F.FLAG_INTENABLE
+    s.spr_write(1, 0x4000)
+    s.spr_write(SPR_IRQ_MASK, 1)
+    s.set_pc(0x100)
+    s.raise_irq(return_pc=0x104, line=0)
+    assert s.pc == 0x100
+    assert s.spr_read(0) == 0

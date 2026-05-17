@@ -12,11 +12,18 @@ from core import flags as F
 from core.bus import SystemBus
 from core.cycles import CycleCounter
 from core.disasm import disassemble_word
-from core.exceptions import BreakpointHit, CpuError, CpuHalted, IllegalInstruction, MisalignedAccess
+from core.exceptions import (
+    BreakpointHit,
+    CpuError,
+    CpuHalted,
+    IllegalInstruction,
+    MisalignedAccess,
+    WatchpointHit,
+)
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.runner import Runner
-from core.state import CPUState, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC
+from core.state import SPR_IRQ_MASK, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC, CPUState
 from core.trace import StepTrace
 
 if TYPE_CHECKING:
@@ -103,6 +110,8 @@ def _spr_name(idx: int) -> str | None:
         return "SAVED_IRQ_PC"
     if idx == SPR_IRQ_VECTOR:
         return "IRQ_VECTOR"
+    if idx == SPR_IRQ_MASK:
+        return "IRQ_MASK"
     return None
 
 
@@ -247,6 +256,9 @@ class DebugController:
         except BreakpointHit as e:
             self.last_error = None
             return StepResult(StepKind.BREAKPOINT, f"breakpoint at 0x{e.pc:x}")
+        except WatchpointHit as e:
+            self.last_error = None
+            return StepResult(StepKind.BREAKPOINT, f"watchpoint {e.kind} at 0x{e.addr:x}")
         except (IllegalInstruction, MisalignedAccess, CpuError, IndexError) as e:
             self.last_error = str(e)
             return StepResult(StepKind.ERROR, str(e))
@@ -256,6 +268,9 @@ class DebugController:
         self.instruction_count += 1
         self.last_error = None
         return StepResult(StepKind.OK)
+
+    def run_until_halt(self, max_steps: int = 100_000) -> StepResult:
+        return self.run_n(max_steps)
 
     def run_n(self, n: int) -> StepResult:
         if n < 1:

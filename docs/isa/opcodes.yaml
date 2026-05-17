@@ -4,6 +4,8 @@
 word_width_bits: 32
 pc_register: 31
 zero_register: 0
+# ABI: stack pointer is GPR 30 (see GPR_STACK_POINTER in core/state.py).
+stack_pointer_register: 30
 
 special_words:
   nop: 0x00000000
@@ -40,6 +42,28 @@ instructions:
         bits: [15, 11]
       - name: imm11
         bits: [10, 0]
+
+  - mnemonic: ROL
+    opcode: 0b000011
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SMUL
+    opcode: 0b000100
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
 
   - mnemonic: JMP
     opcode: 0b010000
@@ -94,6 +118,178 @@ instructions:
         bits: [25, 21]
       - name: imm11
         bits: [10, 0]
+
+  - mnemonic: LDRPOST
+    opcode: 0b010110
+    format: load_store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdest
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: LDRPRE
+    opcode: 0b000101
+    format: load_store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdest
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: STRPRE
+    opcode: 0b000110
+    format: store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdata
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: LDREX
+    opcode: 0b000111
+    format: load_store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdest
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: STREX
+    opcode: 0b100000
+    format: strex
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rsrc
+        bits: [20, 16]
+      - name: rstatus
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: STRPOST
+    opcode: 0b010111
+    format: store
+    fields:
+      - name: raddr
+        bits: [25, 21]
+      - name: rdata
+        bits: [20, 16]
+      - name: mask
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: UMULL
+    opcode: 0b001000
+    format: mul
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: resh
+        bits: [10, 6]
+
+  - mnemonic: SMULL
+    opcode: 0b001001
+    format: mul
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: resh
+        bits: [10, 6]
+
+  - mnemonic: MLA
+    opcode: 0b001010
+    format: mla
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: racc
+        bits: [15, 11]
+      - name: res
+        bits: [10, 6]
+
+  - mnemonic: BIC
+    opcode: 0b001011
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: MVN
+    opcode: 0b001100
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: NEG
+    opcode: 0b001101
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: ANDS
+    opcode: 0b001110
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: ROR
+    opcode: 0b001111
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
 
   - mnemonic: ADD
     opcode: 0b100001
@@ -243,6 +439,96 @@ instructions:
         bits: [15, 11]
       - name: imm11
         bits: [10, 0]
+
+  - mnemonic: BJ
+    opcode: 0b011000
+    format: branch_cond
+    fields:
+      - name: cond
+        bits: [25, 22]
+      - name: raddr
+        bits: [21, 17]
+      - name: imm11
+        bits: [16, 6]
+
+  - mnemonic: WRITESPR
+    opcode: 0b011001
+    format: spr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: spr
+        bits: [15, 11]
+
+  - mnemonic: ADDSI
+    opcode: 0b011010
+    format: imm16
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: immh
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: SUBSI
+    opcode: 0b011011
+    format: imm16
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: immh
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+      - name: imm11
+        bits: [10, 0]
+
+  - mnemonic: ADC
+    opcode: 0b011100
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: ADCS
+    opcode: 0b011101
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SBC
+    opcode: 0b011110
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
+
+  - mnemonic: SBCS
+    opcode: 0b011111
+    format: rrr
+    fields:
+      - name: r1
+        bits: [25, 21]
+      - name: r2
+        bits: [20, 16]
+      - name: res
+        bits: [15, 11]
 
   - mnemonic: EI
     opcode: 0b110010

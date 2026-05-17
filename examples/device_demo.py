@@ -2,6 +2,9 @@
 """
 Demo: GPIO, UART (TX bytes, RX, STATUS), timer (compare + IRQ + ACK), EI/IRET.
 
+ABI: R30 = SP, R31 = PC (docs/isa/spec.md). This demo does not use the stack;
+avoid R30/R31 as general-purpose temps — snapshot uses r7.
+
 Run from repo root:
   python examples/device_demo.py
 Paths: adds src/ to sys.path.
@@ -57,7 +60,7 @@ ADDI 0 27 33
 STR 23 27 1 0
 ADDI 0 27 10
 STR 23 27 1 0
-LDR 24 30 15 0
+LDR 24 7 15 0
 ADDI 0 26 28
 STR 24 26 15 8
 ADDI 0 26 0
@@ -117,7 +120,7 @@ def main() -> None:
     print(f"uart_tx bytes = {tx!r}  text={tx.decode('latin-1', errors='replace')!r}")
     print(f"r5 uart STATUS = 0x{st.reg_read(5):08x}")
     print(f"r6 uart RX read = 0x{st.reg_read(6):08x} (queued 'X' = 0x58)")
-    print(f"r30 tmr CYCLES_LO snapshot (before timer arm) = 0x{st.reg_read(30):08x}")
+    print(f"r7 tmr CYCLES_LO snapshot (before timer arm) = 0x{st.reg_read(7):08x}")
     print(f"flags = 0x{st.flags:08x}")
     print(f"SPR0 saved_irq = 0x{st.spr_read(0):08x}")
     if st.halted and bus.gpio.out == 0x00FF_00FF:

@@ -6,8 +6,18 @@ _DEFAULT = 1
 
 _COSTS: dict[str, int] = {
     "MUL": 3,
+    "UMULL": 3,
+    "SMULL": 3,
+    "SMUL": 3,
+    "MLA": 3,
     "LDR": 2,
     "STR": 2,
+    "LDRPOST": 2,
+    "STRPOST": 2,
+    "LDRPRE": 2,
+    "STRPRE": 2,
+    "LDREX": 2,
+    "STREX": 2,
 }
 
 

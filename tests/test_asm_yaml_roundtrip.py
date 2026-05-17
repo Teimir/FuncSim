@@ -31,6 +31,12 @@ def _sample_line(mnemonic: str, fmt: str) -> str:
         return f"{m} 6 7 15 0"
     if fmt == "spr":
         return f"{m} 2 3"
+    if fmt == "branch_cond":
+        return f"{m} 0 5 0"
+    if fmt == "mla":
+        return f"{m} 1 2 3 4"
+    if fmt == "strex":
+        return f"{m} 1 2 3 0"
     raise ValueError(fmt)
 
 

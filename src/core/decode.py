@@ -74,7 +74,7 @@ def decode_word(word: int) -> Instruction:
     fmt = ent["format"]
     if fmt == "imm16":
         fields["imm32"] = imm16_from_parts(int(fields["immh"]), int(fields["imm11"]))
-    elif fmt in ("branch", "load_store", "store"):
+    elif fmt in ("branch", "load_store", "store", "branch_cond", "strex"):
         fields["imm32"] = sext11(int(fields["imm11"]))
 
     return Instruction(ent["mnemonic"], fmt, w, fields)

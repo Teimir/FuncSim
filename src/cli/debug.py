@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import argparse
 import cmd
-from pathlib import Path
 
-from core.bus import MMIO_BASE_DEFAULT, SystemBus
+from cli.debug_common import add_sim_session_arguments, build_repl_memory, load_program_into_memory
+from core.bus import SystemBus
 from core.disasm import disassemble_word
 from core.exceptions import BreakpointHit, CpuHalted
-from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
-from core.peripherals.uart import Uart
 from core.runner import Runner
 from core.state import CPUState
 
@@ -122,36 +120,15 @@ class DebugShell(cmd.Cmd):
 
 def main() -> None:
     p = argparse.ArgumentParser(description="E32C interactive debugger")
-    p.add_argument("--load-addr", type=lambda x: int(x, 0), default=0)
-    p.add_argument("--hex", type=Path, help="Hex words file")
-    p.add_argument("--bin", type=Path, help="Binary image")
-    p.add_argument("--mmio", action="store_true")
-    p.add_argument("--mmio-base", type=lambda x: int(x, 0), default=MMIO_BASE_DEFAULT)
-    p.add_argument("--sd-image", type=Path, default=None)
-    p.add_argument("--sd-create-sectors", type=int, default=None)
+    add_sim_session_arguments(p)
     args = p.parse_args()
 
-    ram = Memory()
-    if args.mmio or args.sd_image is not None:
-        uart = Uart()
-        mem: Memory | SystemBus = SystemBus(
-            ram,
-            mmio_base=args.mmio_base,
-            uart=uart,
-            sd_image=args.sd_image,
-            sd_create_sectors=args.sd_create_sectors,
-        )
-    else:
-        mem = ram
+    _, mem = build_repl_memory(args)
 
     st = CPUState()
-    if args.bin:
-        load_binary(mem, args.load_addr, args.bin)
-    elif args.hex:
-        ws = words_from_hex_lines(args.hex.read_text(encoding="utf-8"))
-        load_words(mem, args.load_addr, ws)
-    else:
+    if not args.bin and not args.hex:
         p.error("provide --hex or --bin")
+    load_program_into_memory(mem, args.load_addr, args)
 
     st.set_pc(args.load_addr)
     r = Runner(st, mem)

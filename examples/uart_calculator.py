@@ -6,6 +6,8 @@ Supported operators: +, -, *
 Result is printed as decimal (up to 32-bit unsigned). Invalid expressions return '?'.
 Command `HALT\n` stops calculator loop.
 
+ABI: R30 = SP, R31 = PC (docs/isa/spec.md). Constant 1e9 is kept in r9, not r30.
+
 Run from repo root:
   python examples/uart_calculator.py
   python examples/uart_calculator.py "7*8\n"
@@ -76,7 +78,7 @@ def _build_calc_program() -> list[int]:
         "ADDI 0 27 1",  # UART status FLAG_RX_READY
         "LDR 20 28 15 24",  # '?'
         "ADDI 0 16 10",  # const 10
-        "LDR 20 30 15 28",  # 1000000000
+        "LDR 20 9 15 28",  # 1000000000 (r9; не R30/SP по ABI)
         "LDR 20 17 15 64",  # 'H'
         "LDR 20 18 15 68",  # 'A'
         "LDR 20 19 15 72",  # 'L'
@@ -258,7 +260,7 @@ def _build_calc_program() -> list[int]:
         "STR 29 6 1 0",
         "ADDI 0 15 1",
         ":advance_place",
-        "SUBS 7 30 11",
+        "SUBS 7 9 11",
         "JZ 31 @next_1e8",
         "LDR 20 6 15 32",  # compare with 100000000
         "SUBS 7 6 11",

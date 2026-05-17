@@ -8,29 +8,35 @@ from pathlib import Path
 from core.cycles import CycleCounter
 from core.exceptions import MisalignedAccess
 from core.memory import Memory
+from core.mmio_constants import (
+    GPIO_OFFSET,
+    GPIO_REGION_SIZE,
+    MMIO_BASE_DEFAULT,
+    MMIO_WINDOW_SIZE,
+    SD_OFFSET,
+    SD_REGION_SIZE,
+    TIMER_OFFSET,
+    TIMER_REGION_SIZE,
+    UART_OFFSET,
+    UART_REGION_SIZE,
+)
 from core.peripherals.gpio import Gpio
-from core.peripherals.sd_card import REGION_SIZE as SD_REGION_SIZE
 from core.peripherals.sd_card import SdCardMmio
 from core.peripherals.timer import CycleTimer
 from core.peripherals.uart import Uart
 from core.state import CPUState
 
-MMIO_BASE_DEFAULT = 0xFFFF_0000
-MMIO_WINDOW_SIZE = 0x4000
-
-GPIO_OFFSET = 0x0000
-UART_OFFSET = 0x1000
-TIMER_OFFSET = 0x2000
-SD_OFFSET = 0x3000
-
-# Re-export SD_OFFSET for tests/docs compatibility
 __all__ = [
     "MMIO_BASE_DEFAULT",
     "MMIO_WINDOW_SIZE",
     "GPIO_OFFSET",
+    "GPIO_REGION_SIZE",
     "UART_OFFSET",
+    "UART_REGION_SIZE",
     "TIMER_OFFSET",
+    "TIMER_REGION_SIZE",
     "SD_OFFSET",
+    "SD_REGION_SIZE",
     "SystemBus",
 ]
 
@@ -57,9 +63,9 @@ class SystemBus:
         self._mmio_regions: list[
             tuple[int, int, Callable[[int], int], Callable[[int, int], None]]
         ] = [
-            (GPIO_OFFSET, GPIO_OFFSET + 4, self._mmio_gpio_read, self._mmio_gpio_write),
-            (UART_OFFSET, UART_OFFSET + 0x10, self._mmio_uart_read, self._mmio_uart_write),
-            (TIMER_OFFSET, TIMER_OFFSET + 0x20, self._mmio_timer_read, self._mmio_timer_write),
+            (GPIO_OFFSET, GPIO_OFFSET + GPIO_REGION_SIZE, self._mmio_gpio_read, self._mmio_gpio_write),
+            (UART_OFFSET, UART_OFFSET + UART_REGION_SIZE, self._mmio_uart_read, self._mmio_uart_write),
+            (TIMER_OFFSET, TIMER_OFFSET + TIMER_REGION_SIZE, self._mmio_timer_read, self._mmio_timer_write),
             (SD_OFFSET, SD_OFFSET + SD_REGION_SIZE, self._mmio_sd_read, self._mmio_sd_write),
         ]
 

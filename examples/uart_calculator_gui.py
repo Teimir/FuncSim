@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open GUI debugger with UART calculator demo loaded.
+"""Open GUI debugger with UART calculator demo loaded (ABI: R30=SP, R31=PC — см. spec).
 
 Use "View -> UART terminal..." in GUI:
 - send text like: 7+2
