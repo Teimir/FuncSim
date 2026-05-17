@@ -25,8 +25,7 @@ module tb_timer_gpio;
 
   wire uart_tx;
   reg  uart_rx = 1'b1;
-
-  soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
+soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(m_awvalid),
@@ -49,7 +48,6 @@ module tb_timer_gpio;
     .uart_tx(uart_tx),
     .uart_rx(uart_rx)
   );
-
   `include "tb_axi_tasks.svh"
   `include "tb_psram_mem.svh"
 

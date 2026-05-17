@@ -27,8 +27,7 @@ module tb_sd_spi_protocol;
   reg uart_rx = 1'b1;
   wire sd_sck, sd_mosi, sd_cs_n;
   reg sd_miso = 1'b1;
-
-  soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256), .ENABLE_SD_SPI(1)) dut (
+soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256), .ENABLE_SD_SPI(1)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(m_awvalid),
@@ -55,7 +54,6 @@ module tb_sd_spi_protocol;
     .sd_spi_miso(sd_miso),
     .sd_spi_cs_n(sd_cs_n)
   );
-
   `include "tb_axi_tasks.svh"
   `include "tb_psram_mem.svh"
 

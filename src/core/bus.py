@@ -22,6 +22,7 @@ from core.mmio_constants import (
 )
 from core.peripherals.gpio import Gpio
 from core.peripherals.sd_card import SdCardMmio
+from core.peripherals.sd_spi import SdSpiMmio
 from core.peripherals.timer import CycleTimer
 from core.peripherals.uart import Uart
 from core.state import CPUState
@@ -50,13 +51,16 @@ class SystemBus:
         uart: Uart | None = None,
         sd_image: Path | None = None,
         sd_create_sectors: int | None = None,
+        sd_spi: bool = False,
     ) -> None:
         self.ram = ram
         self.mmio_base = mmio_base & 0xFFFFFFFF
         self.gpio = Gpio()
         self.uart = uart if uart is not None else Uart()
         self.timer = CycleTimer(lambda: 0)
-        self.sd = SdCardMmio()
+        self.sd_block = SdCardMmio()
+        self.sd_spi_dev = SdSpiMmio()
+        self._sd_spi_mode = bool(sd_spi)
         if sd_image is not None:
             self.sd.mount(sd_image, create_sectors=sd_create_sectors)
 
@@ -105,6 +109,19 @@ class SystemBus:
     def _mmio_timer_write(self, rel: int, value: int) -> None:
         self.timer.write_reg(rel, value)
 
+    @property
+    def sd(self) -> SdCardMmio | SdSpiMmio:
+        return self.sd_spi_dev if self._sd_spi_mode else self.sd_block
+
+    def use_sd_spi(self) -> None:
+        """Switch storage at +0x3000 from block MMIO to SPI command registers."""
+        if self._sd_spi_mode:
+            return
+        path = self.sd_block.path
+        self._sd_spi_mode = True
+        if path is not None:
+            self.sd_spi_dev.mount(path)
+
     def _mmio_sd_read(self, rel: int) -> int:
         return self.sd.read_word(rel)
 
@@ -148,4 +165,5 @@ class SystemBus:
         self.ram.write_bytes(addr, data)
 
     def on_step_end(self, total_cycles: int, state: CPUState, return_pc: int) -> None:
+        self.uart.tick()
         self.timer.process(total_cycles, state, return_pc)

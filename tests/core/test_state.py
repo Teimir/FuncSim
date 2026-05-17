@@ -17,8 +17,16 @@ def test_pc_is_r31() -> None:
 
 def test_spr_roundtrip() -> None:
     s = CPUState()
-    s.spr_write(3, 0x12345678)
-    assert s.spr_read(3) == 0x12345678
+    s.spr_write(6, 0x12345678)
+    assert s.spr_read(6) == 0x12345678
+
+
+def test_spr_core_info_read_only() -> None:
+    from core.spr_constants import CORE_INFO_FULL, SPR_CORE_INFO
+
+    s = CPUState()
+    s.spr_write(SPR_CORE_INFO, 0xDEADBEEF)
+    assert s.spr_read(SPR_CORE_INFO) == CORE_INFO_FULL
 
 
 def test_raise_irq_when_enabled() -> None:

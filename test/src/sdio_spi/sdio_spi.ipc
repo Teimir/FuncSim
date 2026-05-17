@@ -1,0 +1,16 @@
+[General]
+ipc_version=4
+file=sdio_spi
+module=SDIO_SPI_Top
+target_device=gw1nr9c-004
+type=sdio_spi
+version=1.0
+
+[Config]
+Disable_IO_Insertion=true
+LANG=0
+SPI1_Channel=true
+SPI2_Channel=false
+SPI3_Channel=false
+SPI4_Channel=false
+Synthesis_tool=GowinSynthesis

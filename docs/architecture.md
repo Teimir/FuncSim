@@ -2,6 +2,8 @@
 
 Документ описывает **программную архитектуру** репозитория `e32c-sim`: модель процессора E32C, память, периферию MMIO, цикл исполнения и окружение (CLI, GUI, тесты). Это не описание кремниевого чипа, а **уровень абстракции Python-симулятора**, согласованный с [ISA](isa/spec.md) и [картой MMIO](mmio.md).
 
+Сводная **карта возможностей** и **карта адресов** (RAM + MMIO): [главный README](../README.md).
+
 ## 1. Назначение системы
 
 - **Цель:** исполнять программы в виде 32-битных слов по спецификации E32C с предсказуемой семантикой (регистры, флаги, память, исключения).
@@ -114,11 +116,12 @@ flowchart TB
 ## 8. CLI entry points
 
 
-| Модуль          | Назначение                                                                                       |
-| --------------- | ------------------------------------------------------------------------------------------------ |
-| `cli.sim`       | Прогон с лимитом шагов, отчёт инструкций/циклов                                                  |
-| `cli.debug`     | Текстовая отладка                                                                                |
-| `cli.debug_gui` | Запуск GUI; флаги `--mmio`, `--sd-image`, `--sd-create-sectors` согласуются с конструктором шины |
+| Модуль           | Назначение                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `cli.sim`        | Прогон с лимитом шагов, отчёт инструкций/циклов                                                  |
+| `cli.debug`      | Текстовая отладка                                                                                |
+| `cli.debug_gui`  | Запуск GUI; флаги `--mmio`, `--sd-image`, `--sd-create-sectors` согласуются с конструктором шины |
+| `cli.gdb_server` | GDB Remote Serial Protocol (TCP); см. [gdb/README.md](gdb/README.md)                             |
 
 
 Точка входа пакета: `e32c-debug-gui` → `cli.debug_gui.app:main` (код окна в каталоге `cli/debug_gui/`). Общие флаги сессии (`--hex`, `--bin`, `--mmio`, SD) вынесены в `cli.debug_common` для REPL (`cli.debug`) и GUI.
@@ -129,16 +132,21 @@ flowchart TB
 - **pytest**, **hypothesis**, **ruff**, **pytest-cov** — опционально в `[dev]` ([pyproject.toml](../pyproject.toml)).
 - Тесты: `tests/` — ISA step-векторы (`tests/isa/test_vectors.yaml`), property-тесты, `test/equiv` (Python programs), RTL через `scripts/verify_all.py`.
 
-| Уровень | Python | RTL / cosim |
-|--------|--------|-------------|
-| PR (`verify_all --quick`) | pytest −slow, equiv | smoke benches + `compare_rtl_python` |
-| Nightly (`--full`) | + Hypothesis slow | + `tb_core_isa`, longrun, `compare_rtl_python --full` |
-| Плата | — | Gowin bitstream ([test/fpga/README.md](../test/fpga/README.md)) |
 
-Отложенные эпики: [docs/BACKLOG.md](BACKLOG.md).
+| Уровень                   | Python              | RTL / cosim                                                     |
+| ------------------------- | ------------------- | --------------------------------------------------------------- |
+| PR (`verify_all --quick`) | pytest −slow, equiv | smoke benches + `compare_rtl_python`                            |
+| Nightly (`--full`)        | + Hypothesis slow   | + `tb_core_isa`, longrun, `compare_rtl_python --full`           |
+| Плата                     | —                   | Gowin bitstream ([test/fpga/README.md](../test/fpga/README.md)) |
+
+
+**Профили Python / RTL / FPGA** (что где реализовано, ограничения TN9K, cosim gap): [profiles.md](profiles.md).
+
+Отложенные эпики: [docs/BACKLOG.md](BACKLOG.md). Каталог `test/` в текущем цикле не меняем — см. [BACKLOG.md](BACKLOG.md).
 
 ## 10. Связанные документы
 
+- [Full core (arch + microarch для RTL)](core-full/README.md) — эталон `core_variant=full` и `e32c_core`
 - [ISA spec](isa/spec.md) — каноническая семантика инструкций  
 - [MMIO map](mmio.md) — адреса устройств  
 - [Периферия (детали таймера и UART)](peripherals.md)  

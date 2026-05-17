@@ -23,6 +23,7 @@ from core.exceptions import (
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.runner import Runner
+from core.spr_constants import SPR_CORE_INFO, SPR_FEATURES, SPR_ISA_REVISION
 from core.state import SPR_IRQ_MASK, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC, CPUState
 from core.trace import StepTrace
 
@@ -112,6 +113,12 @@ def _spr_name(idx: int) -> str | None:
         return "IRQ_VECTOR"
     if idx == SPR_IRQ_MASK:
         return "IRQ_MASK"
+    if idx == SPR_CORE_INFO:
+        return "CORE_INFO"
+    if idx == SPR_ISA_REVISION:
+        return "ISA_REVISION"
+    if idx == SPR_FEATURES:
+        return "FEATURES"
     return None
 
 
@@ -132,15 +139,26 @@ def _mmio_snapshot(bus: SystemBus) -> MmioSnapshot:
     st = uart.read_reg(uart.UART_STATUS)
     t = bus.timer
     sd_info = bus.sd.snapshot_info()
-    sd_snap = SdSnapshot(
-        path=sd_info["path"],  # type: ignore[arg-type]
-        mounted=bool(sd_info["mounted"]),
-        lba=int(sd_info["lba_reg"]),
-        status=int(sd_info["status"]),
-        err_code=int(sd_info["err_code"]),
-        sectors=int(sd_info["sectors"]),
-        buffer_preview=str(sd_info["buffer_preview"]),
-    )
+    if sd_info.get("mode") == "spi":
+        sd_snap = SdSnapshot(
+            path=sd_info.get("path"),  # type: ignore[arg-type]
+            mounted=bool(sd_info.get("ready")),
+            lba=int(sd_info.get("blkidx", 0)),
+            status=0,
+            err_code=0,
+            sectors=0,
+            buffer_preview=f"spi resp=0x{int(sd_info.get('last_resp', 0)):08x}",
+        )
+    else:
+        sd_snap = SdSnapshot(
+            path=sd_info["path"],  # type: ignore[arg-type]
+            mounted=bool(sd_info["mounted"]),
+            lba=int(sd_info["lba_reg"]),
+            status=int(sd_info["status"]),
+            err_code=int(sd_info["err_code"]),
+            sectors=int(sd_info["sectors"]),
+            buffer_preview=str(sd_info["buffer_preview"]),
+        )
     return MmioSnapshot(
         mmio_base=base,
         gpio_out=bus.gpio.out,
@@ -435,7 +453,18 @@ class DebugController:
         else:
             fetch_dis = disassemble_word(fetch_w)
 
-        spr_rows = sorted((k, v & 0xFFFFFFFF, _spr_name(k)) for k, v in self.state.spr.items())
+        spr_known = {
+            SPR_SAVED_IRQ_PC,
+            SPR_IRQ_VECTOR,
+            SPR_IRQ_MASK,
+            SPR_CORE_INFO,
+            SPR_ISA_REVISION,
+            SPR_FEATURES,
+        }
+        spr_indices = spr_known | set(self.state.spr.keys())
+        spr_rows = sorted(
+            (idx, self.state.spr_read(idx), _spr_name(idx)) for idx in spr_indices
+        )
 
         mmio_snap: MmioSnapshot | None = None
         if isinstance(self.mem, SystemBus):

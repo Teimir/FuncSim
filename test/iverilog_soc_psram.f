@@ -2,7 +2,7 @@
 +incdir+test/src
 test/src/top.sv
 test/src/core.sv
-test/src/csr_irq.sv
+test/src/csr_spr.sv
 test/src/icache.sv
 test/src/axi4lite_xbar_1x2.sv
 test/src/axi_to_apb_bridge.sv
@@ -13,5 +13,12 @@ test/src/uart_rx.v
 test/src/timer.sv
 test/src/gpio.sv
 test/src/sd_spi.sv
+test/src/sd_spi_card_mem.sv
+test/src/apb_sdio_spi_bridge.sv
+test/src/sd_block.sv
+test/src/e32c_apb_sd_slot.sv
+test/src/sdio_spi_io.v
+test/src/sdio_spi_clocks.sv
+test/src/sdio_spi_soc_wrapper.sv
 test/src/mul_dsp.sv
 test/src/psram.sv

@@ -5,14 +5,33 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from core import flags as F
+from core.spr_constants import (
+    SPR_CORE_INFO,
+    SPR_FEATURES,
+    SPR_IRQ_MASK,
+    SPR_IRQ_VECTOR,
+    SPR_ISA_REVISION,
+    SPR_SAVED_IRQ_PC,
+    VARIANT_CORE_INFO,
+    VARIANT_FEATURES,
+    VARIANT_ISA_REVISION,
+)
 
-SPR_SAVED_IRQ_PC = 0
-SPR_IRQ_VECTOR = 1
-# Бит i = 1: линия прерывания i замаскирована (не доставляется). 0 = все линии разрешены.
-SPR_IRQ_MASK = 2
+__all__ = [
+    "CPUState",
+    "GPR_STACK_POINTER",
+    "SPR_SAVED_IRQ_PC",
+    "SPR_IRQ_VECTOR",
+    "SPR_IRQ_MASK",
+    "SPR_CORE_INFO",
+    "SPR_ISA_REVISION",
+    "SPR_FEATURES",
+]
 
 # Соглашение ABI (программное): указатель стека — **R30**. Аппаратно это обычный GPR.
 GPR_STACK_POINTER = 30
+
+_RO_SPR_INDICES = frozenset({SPR_CORE_INFO, SPR_ISA_REVISION, SPR_FEATURES})
 
 
 @dataclass
@@ -26,11 +45,18 @@ class CPUState:
     irq_in_service: bool = False
     exclusive_addr: int | None = None
     exclusive_valid: bool = False
+    core_variant: str = "full"
 
     def __post_init__(self) -> None:
         if len(self.regs) != 32:
             raise ValueError("regs must have length 32")
         self.regs = [x & 0xFFFFFFFF for x in self.regs]
+        if self.core_variant not in VARIANT_CORE_INFO:
+            raise ValueError(f"unknown core_variant {self.core_variant!r}")
+
+    @classmethod
+    def for_variant(cls, name: str, **kwargs: object) -> CPUState:
+        return cls(core_variant=name, **kwargs)  # type: ignore[arg-type]
 
     def reg_read(self, index: int) -> int:
         if index == 0:
@@ -49,10 +75,23 @@ class CPUState:
     def set_pc(self, value: int) -> None:
         self.reg_write(31, value & 0xFFFFFFFF)
 
+    def _ro_spr_value(self, index: int) -> int:
+        if index == SPR_CORE_INFO:
+            return VARIANT_CORE_INFO[self.core_variant]
+        if index == SPR_ISA_REVISION:
+            return VARIANT_ISA_REVISION[self.core_variant]
+        if index == SPR_FEATURES:
+            return VARIANT_FEATURES[self.core_variant]
+        raise KeyError(index)
+
     def spr_read(self, index: int) -> int:
+        if index in _RO_SPR_INDICES:
+            return self._ro_spr_value(index)
         return int(self.spr.get(index, 0)) & 0xFFFFFFFF
 
     def spr_write(self, index: int, value: int) -> None:
+        if index in _RO_SPR_INDICES:
+            return
         self.spr[index] = value & 0xFFFFFFFF
 
     def raise_irq(self, return_pc: int, line: int = 0) -> None:

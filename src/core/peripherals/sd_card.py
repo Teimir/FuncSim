@@ -7,16 +7,16 @@ from pathlib import Path
 from typing import BinaryIO
 
 from core.mmio_constants import SD_REGION_SIZE
+from core.mmio_sd_regs import SdBlockRegs
 
 SECTOR_SIZE = 512
 WORD_COUNT = SECTOR_SIZE // 4
 
-# MMIO layout relative to SD region base
-REG_CTRL = 0x00
-REG_STATUS = 0x04
-REG_LBA = 0x08
-DATA_BASE = 0x10
-REGION_SIZE = SD_REGION_SIZE  # must match docs/isa/mmio_map.yaml (gen_mmio)
+REG_CTRL = SdBlockRegs.REG_CTRL
+REG_STATUS = SdBlockRegs.REG_STATUS
+REG_LBA = SdBlockRegs.REG_LBA
+DATA_BASE = SdBlockRegs.DATA_BASE
+REGION_SIZE = SD_REGION_SIZE
 
 # CTRL command (low byte of written word)
 CMD_READ = 1

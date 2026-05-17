@@ -7,8 +7,7 @@ module tb_core_smoke;
 
   wire uart_tx;
   reg  uart_rx = 1'b1;
-
-  soc_top #(.RAM_WORDS(1024)) dut (
+soc_top #(.RAM_WORDS(1024)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(1'b0),
@@ -31,7 +30,6 @@ module tb_core_smoke;
     .uart_tx(uart_tx),
     .uart_rx(uart_rx)
   );
-
   initial begin
     #20 rst_n = 1;
     repeat (20) @(posedge clk);

@@ -1,58 +1,151 @@
-# MMIO map (E32C functional simulator)
+# MMIO map (E32C)
 
-**Source of truth:** [`docs/isa/mmio_map.yaml`](isa/mmio_map.yaml). Regenerate artifacts with `python scripts/gen_mmio.py` (outputs [`src/core/mmio_constants.py`](../src/core/mmio_constants.py) and [`test/src/mmio_generated.svh`](../test/src/mmio_generated.svh) for RTL `` `include ``).
+Источник истины: `[docs/isa/mmio_map.yaml](isa/mmio_map.yaml)`.
 
-Default base: `0xFFFF_0000` (`MMIO_BASE_DEFAULT`). All accesses are **32-bit word aligned** (see `SystemBus.read_word` / `write_word`).
+Регенерация:
 
-Window size: `**0x4000`** bytes from `mmio_base` (devices must live in `[mmio_base, mmio_base + 0x4000)`).
+```bash
+python scripts/gen_mmio.py
+```
 
-## Layout (offset from `mmio_base`)
+→ `[src/core/mmio_constants.py](../src/core/mmio_constants.py)`, `[test/src/mmio_generated.svh](../test/src/mmio_generated.svh)`.
+
+Обзор и сводная карта: [../README.md](../README.md#карта-адресов).
+
+---
+
+## Общие правила
 
 
-| Offset (hex) | Device             | Size (hex) | Notes                                      |
-| ------------ | ------------------ | ---------- | ------------------------------------------ |
-| `0x0000`     | GPIO               | `0x4`      | Single word: output latch read/write       |
-| `0x1000`     | UART               | `0x10`     | See UART registers below                   |
-| `0x2000`     | Timer              | `0x20`     | Cycle compare + IRQ; see `CycleTimer`      |
-| `0x3000`     | SD / block storage | `0x210`    | Functional block device (not SPI protocol) |
+| Параметр          | Значение                                                 |
+| ----------------- | -------------------------------------------------------- |
+| База по умолчанию | `0xFFFF_0000` (`MMIO_BASE_DEFAULT`)                      |
+| Размер окна       | `0x4000` (16 KiB)                                        |
+| Доступ            | Только **32-битные выровненные** слова (`addr % 4 == 0`) |
+| Маршрутизация     | `SystemBus` (Python): RAM, затем MMIO                    |
 
 
-Legacy programs using only GPIO/UART/Timer are unaffected: their offsets are unchanged.
+---
+
+## Расположение устройств
+
+
+| Смещение  | Устройство | Размер (Python) | Абсолютный адрес |
+| --------- | ---------- | --------------- | ---------------- |
+| `+0x0000` | GPIO       | 4 B             | `0xFFFF_0000`    |
+| `+0x1000` | UART       | 16 B            | `0xFFFF_1000`    |
+| `+0x2000` | Timer      | 32 B            | `0xFFFF_2000`    |
+| `+0x3000` | SD         | 528 B           | `0xFFFF_3000`    |
+
+
+---
+
+## GPIO (`+0x0000`)
+
+
+| +offset | Доступ | Описание                   |
+| ------- | ------ | -------------------------- |
+| `0x00`  | R/W    | 32-битная выходная защёлка |
+
+
+---
 
 ## UART (`+0x1000`)
 
+Модель: `[src/core/peripherals/uart.py](../src/core/peripherals/uart.py)`. RTL: `[test/src/uart.sv](../test/src/uart.sv)`.
 
-| Offset | Name   | Access                              |
-| ------ | ------ | ----------------------------------- |
-| `+0x0` | TX     | Write: enqueue TX byte (low 8 bits) |
-| `+0x4` | RX     | Read: dequeue RX byte               |
-| `+0x8` | STATUS | Read: `RX_READY`, `TX_IDLE` flags   |
 
+| +offset | Имя    | Доступ | Описание                      |
+| ------- | ------ | ------ | ----------------------------- |
+| `0x00`  | TX     | W      | Младший байт → TX-очередь     |
+| `0x04`  | RX     | R      | Байт из RX (пусто → 0)        |
+| `0x08`  | STATUS | R      | bit0 RX ready; bit1 TX idle; bit2 TX full; bit3 RX full |
+| `0x0C`  | CTRL   | R/W    | bit0 IRQ RX; bit1 IRQ TX done |
+
+TX/RX FIFO depth **8** (запись в TX при full — stall APB `pready=0` в RTL).
+
+
+---
 
 ## Timer (`+0x2000`)
 
-See `[src/core/peripherals/timer.py](../src/core/peripherals/timer.py)`: cycle counter low/high, compare low/high, control (IRQ enable, pending, ACK W1C).
+Модель: [`src/core/peripherals/timer.py`](../src/core/peripherals/timer.py).
 
-## SD / block storage (`+0x3000`)
+### LO / HI = одно 64-битное значение
 
-512-byte sectors, LBA is a 32-bit sector index. Backed by a **host file** (binary image) when mounted.
+MMIO доступно только **32-битными словами**. Счётчик и compare внутри модели — **64-bit**; в карте регистров они разбиты на пару LO/HI (как в типичных APB-таймерах).
+
+| +offset | Имя        | Доступ | Биты |
+| ------- | ---------- | ------ | ---- |
+| `0x00`  | COUNTER_LO | R      | [31:0] счётчика |
+| `0x04`  | COUNTER_HI | R      | [63:32] счётчика |
+| `0x08`  | COMPARE_LO | R/W    | [31:0] порога |
+| `0x0C`  | COMPARE_HI | R/W    | [63:32] порога |
+| `0x10`  | CTRL       | R/W    | IRQ_EN, PENDING, ACK (W1C) |
+
+**Согласованное чтение счётчика:** сначала `COUNTER_HI`, затем `COUNTER_LO` — симулятор фиксирует снимок на чтении HI (см. код таймера).
+
+**CTRL:** bit0 `IRQ_EN`; bit1 `PENDING` (read); bit2 `ACK` (W1C).
+
+При `cycles >= compare` и включённых IRQ CPU — см. [peripherals.md](peripherals.md), [tutorial_irq_timer.md](tutorial_irq_timer.md).
+
+---
+
+## SD storage (`+0x3000`)
+
+Два режима на одном смещении (флаг `**--sd-spi`** / `SystemBus(sd_spi=True)`).
+
+### A. Block device (по умолчанию)
+
+Модель: `[src/core/peripherals/sd_card.py](../src/core/peripherals/sd_card.py)`.
 
 
-| Offset             | Name   | Access                                                                                                                                  |
-| ------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `+0x00`            | CTRL   | Write: start command in **low byte** — `1` = read sector into buffer, `2` = write buffer to sector, `3` = flush file. Read returns `0`. |
-| `+0x04`            | STATUS | Read only: `READY(1)`, `ERROR(4)`, `NO_MEDIUM(8)`; error code in bits `16–23` if `ERROR`.                                               |
-| `+0x08`            | LBA    | Read/write: sector index for next read/write command.                                                                                   |
-| `+0x10` … `+0x20C` | DATA   | 128 words (512 bytes) sector buffer; little-endian words.                                                                               |
+| +offset        | Имя    | Доступ                                                |
+| -------------- | ------ | ----------------------------------------------------- |
+| `0x00`         | CTRL   | W: `1`=read sector, `2`=write, `3`=flush              |
+| `0x04`         | STATUS | R: READY(1), ERROR(4), NO_MEDIUM(8); err в bits 16–23 |
+| `0x08`         | LBA    | R/W: индекс сектора                                   |
+| `0x10`–`0x20C` | DATA   | 128 слов = 512 B буфер                                |
 
 
-**Read flow:** set `LBA`, write `CTRL = 1`. When `STATUS` has `READY` and not `ERROR`, read DATA aperture.
+**Чтение:** LBA → CTRL=1 → ждать READY → читать DATA.  
+**Запись:** LBA → заполнить DATA → CTRL=2.
 
-**Write flow:** set `LBA`, fill DATA aperture, write `CTRL = 2`.
+Образ — файл на хосте (`--sd-image`), размер кратен 512.
 
-File length must be a multiple of 512 when mounting an existing image (otherwise mount fails / reports error).
+### B. SPI command registers (`--sd-spi`)
 
-## Python / CLI
+Модель: `[src/core/peripherals/sd_spi.py](../src/core/peripherals/sd_spi.py)`. RTL: `[test/src/sd_spi.sv](../test/src/sd_spi.sv)`.
 
-- `SystemBus(..., sd_image=Path | None, sd_create_sectors=int | None)`
-- Flags: `--sd-image`, `--sd-create-sectors` (where applicable) on `cli.sim`, `cli.debug`, `cli.debug_gui`.
+
+| +offset | Имя                               |
+| ------- | --------------------------------- |
+| `0x00`  | CTRL (EN, CS_N, IRQ_EN, IRQ_CLR)  |
+| `0x04`  | DIV                               |
+| `0x08`  | CMD (+ bit8 START)                |
+| `0x0C`  | ARG                               |
+| `0x10`  | RESP0                             |
+| `0x14`  | STATUS (BUSY, READY, RX_VALID, …) |
+| `0x18`  | BLKIDX                            |
+| `0x1C`  | DATAIX                            |
+| `0x20`  | DATARD                            |
+| `0x24`  | DATAWR                            |
+
+
+Типичная инициализация: CMD0 → CMD8 → CMD55 → CMD41 → CMD17/24. Пример: `[examples/sd_spi_probe.py](../examples/sd_spi_probe.py)`.
+
+---
+
+## CLI
+
+
+| Флаг                  | Эффект                                  |
+| --------------------- | --------------------------------------- |
+| `--mmio`              | Включить `SystemBus`                    |
+| `--mmio-base`         | База окна                               |
+| `--sd-image`          | Смонтировать образ (подразумевает MMIO) |
+| `--sd-create-sectors` | Создать образ N секторов                |
+| `--sd-spi`            | Режим SPI вместо block                  |
+
+
+Применяется в: `cli.sim`, `cli.debug`, `cli.debug_gui`, `cli.gdb_server`.

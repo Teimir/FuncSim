@@ -14,7 +14,7 @@ module tb_irq_flow;
   wire [31:0] vec;
   wire [31:0] saved;
 
-  csr_irq dut (
+  csr_spr dut (
     .clk(clk),
     .rst_n(rst_n),
     .cur_pc(cur_pc),
@@ -23,9 +23,9 @@ module tb_irq_flow;
     .iret_exec(iret),
     .irq_ack(ack),
     .wr_en(1'b0),
-    .wr_idx(2'b00),
+    .wr_idx(5'b0),
     .wr_data(32'h0),
-    .rd_idx(2'b00),
+    .rd_idx(5'b0),
     .rd_data(),
     .irq_pending(pending),
     .irq_vector(vec),
@@ -50,15 +50,18 @@ module tb_irq_flow;
       $display("FAIL no pending on level irq");
       $finish(1);
     end
-    ack <= 1;
+    ack <= 1'b1;
+    @(negedge clk);
     @(posedge clk);
-    ack <= 0;
+    ack <= 1'b0;
+    #1;
     if (saved !== 32'h40) begin
       $display("FAIL saved %h", saved);
       $finish(1);
     end
-    if (!pending) begin
-      $display("FAIL pending cleared while irq high and in_service");
+    #1;
+    if (pending) begin
+      $display("FAIL pending still set while in_service");
       $finish(1);
     end
     iret <= 1;

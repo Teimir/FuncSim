@@ -29,8 +29,7 @@ module tb_uart_loopback;
   wire uart_rx;
 
   assign uart_rx = uart_tx;
-
-  soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256), .ENABLE_CORE(0)) dut (
+soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256), .ENABLE_CORE(0)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(m_awvalid),
@@ -65,7 +64,6 @@ module tb_uart_loopback;
     .if_resp_obs(),
     .if_stall_obs()
   );
-
   `include "tb_axi_tasks.svh"
 
   localparam UART_TXDATA = `E32C_UART_BASE + 32'h0;

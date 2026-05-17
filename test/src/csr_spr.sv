@@ -1,6 +1,9 @@
-// SPR IRQ control (ISA: SAVED_IRQ_PC=0, IRQ_VECTOR=1, IRQ_MASK=2).
-// Timer line 0 is level-sensitive; delivery blocked while in_service until IRET.
-module csr_irq (
+// SPR: IRQ control (0–2) + read-only core identity (3–5). See docs/isa/cores.yaml.
+module csr_spr #(
+  parameter logic [31:0] CORE_INFO_VAL = 32'hE32C0100,
+  parameter logic [31:0] ISA_REVISION_VAL = 32'h0001_0005,
+  parameter logic [31:0] FEATURES_VAL = 32'h0000_000B
+) (
   input  logic        clk,
   input  logic        rst_n,
   input  logic [31:0] cur_pc,
@@ -9,9 +12,9 @@ module csr_irq (
   input  logic        iret_exec,
   input  logic        irq_ack,
   input  logic        wr_en,
-  input  logic [1:0]  wr_idx,
+  input  logic [4:0]  wr_idx,
   input  logic [31:0] wr_data,
-  input  logic [1:0]  rd_idx,
+  input  logic [4:0]  rd_idx,
   output logic [31:0] rd_data,
   output logic        irq_pending,
   output logic [31:0] irq_vector,
@@ -36,10 +39,10 @@ module csr_irq (
       if (iret_exec)
         in_service <= 1'b0;
       if (wr_en) begin
-        unique case (wr_idx)
-          2'd0: saved_irq_pc   <= wr_data;
-          2'd1: spr_irq_vector <= wr_data;
-          2'd2: spr_irq_mask   <= wr_data;
+        case (wr_idx)
+          5'd0: saved_irq_pc   <= wr_data;
+          5'd1: spr_irq_vector <= wr_data;
+          5'd2: spr_irq_mask   <= wr_data;
           default: ;
         endcase
       end
@@ -52,10 +55,13 @@ module csr_irq (
   end
 
   always_comb begin
-    unique case (rd_idx)
-      2'd0: rd_data = saved_irq_pc;
-      2'd1: rd_data = spr_irq_vector;
-      2'd2: rd_data = spr_irq_mask;
+    case (rd_idx)
+      5'd0: rd_data = saved_irq_pc;
+      5'd1: rd_data = spr_irq_vector;
+      5'd2: rd_data = spr_irq_mask;
+      5'd3: rd_data = CORE_INFO_VAL;
+      5'd4: rd_data = ISA_REVISION_VAL;
+      5'd5: rd_data = FEATURES_VAL;
       default: rd_data = 32'h0;
     endcase
   end

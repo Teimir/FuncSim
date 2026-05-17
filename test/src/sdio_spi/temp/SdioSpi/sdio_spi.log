@@ -1,0 +1,170 @@
+GowinSynthesis start
+Running parser ...
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v'
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo_define.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo_parameter.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX3705) : Macro 'getname' is redefined("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh":4)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX3801) : Parameter 'uhs_i_support' becomes localparam in '~cmd_dec.SDIO_SPI_Top' with formal parameter declaration list("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh":1)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_param.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Undeclared symbol 'cmd53_cis_fnx_wr_ok', assumed default net type 'wire'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing included file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\static_macro_define.vh'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller_top.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp'
+Analyzing included file 'sdio_spi_name.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp":253)
+WARN  (EX3705) : Macro 'getname' is redefined("sdio_spi_name.v":2)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp":253)
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v'
+Analyzing included file 'sdio_spi_name.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v":3)
+Back to file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v":3)
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_master_tx.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_rx_fifo_top.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_tx_fifo_top.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\user_cpu_slave_reg_if.vp'
+Analyzing Verilog file 'D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\user_tuning_pattern.vp'
+Compiling module 'SDIO_SPI_Top'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v":5)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp":253)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller_top.vp":101)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX3791) : Expression size ** truncated to fit in target size **("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX1998) : Net '**' does not have a driver("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\user_cpu_slave_reg_if.vp":135)
+WARN  (EX3791) : Expression size ** truncated to fit in target size **("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\user_cpu_slave_reg_if.vp":135)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\user_tuning_pattern.vp":43)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_tx_fifo_top.vp":120)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Extracting RAM for identifier '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\fifo.v":553)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_rx_fifo_top.vp":122)
+WARN  (EX3791) : Expression size ** truncated to fit in target size **("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+Compiling module '**'("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\spi_master_tx.vp":178)
+WARN  (EX1998) : Net '**' does not have a driver("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp":253)
+WARN  (EX2565) : Input '**' on this instance is undriven. Assigning to 0, simulation mismatch possible. Please assign the input or remove the declaration("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi.vp":253)
+NOTE  (EX0101) : Current top module is "SDIO_SPI_Top"
+WARN  (EX0211) : The output port "volt_sw_end" of module "~cmd_dec.SDIO_SPI_Top" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "card_select" of module "~sdio_biu.SDIO_SPI_Top" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[16]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[15]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[14]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[13]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[12]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[11]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[10]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[9]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[8]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[7]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[6]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[5]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[4]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[3]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[2]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[1]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+WARN  (EX0211) : The output port "sdio_clr_interrput_addr[0]" of module "~slv_cpu_if.SDIO_SPI_Top(cccr_cccr_ver=4'b0011,cccr_sdio_ver=4'b0101,cccr_sd_format_ver=4'b0100)" has no driver, assigning undriven bits to Z, simulation mismatch possible("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_slave_controller.v":4183)
+[5%] Running netlist conversion ...
+WARN  (CV0016) : Input I_sdio_2M_clk is unused("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\SDIO_SPI_Top.v":10)
+Running device independent optimization ...
+[10%] Optimizing Phase 0 completed
+[15%] Optimizing Phase 1 completed
+[25%] Optimizing Phase 2 completed
+Running inference ...
+[30%] Inferring Phase 0 completed
+[40%] Inferring Phase 1 completed
+[50%] Inferring Phase 2 completed
+[55%] Inferring Phase 3 completed
+Running technical mapping ...
+[60%] Tech-Mapping Phase 0 completed
+[65%] Tech-Mapping Phase 1 completed
+[75%] Tech-Mapping Phase 2 completed
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[1]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[1]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[1]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0101) : The netlist is not one directed acyclic graph
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[0]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[0]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Cunt_Trig_spi_wrd_operate[0]"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0101) : The netlist is not one directed acyclic graph
+WARN  (AG0100) : Find logical loop signal : "Status_spi_port"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Status_spi_port"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0100) : Find logical loop signal : "Status_spi_port"("D:\Gowin\Gowin_V1.9.12_x64\IDE\ipcore\SDIO_SPI\data\sdio_spi_ctrl.vp":443)
+WARN  (AG0101) : The netlist is not one directed acyclic graph
+[80%] Tech-Mapping Phase 3 completed
+[90%] Tech-Mapping Phase 4 completed
+[95%] Generate netlist file "E:\Projects\E32C\test\src\sdio_spi\temp\SdioSpi\sdio_spi.vg" completed
+Generate template file "E:\Projects\E32C\test\src\sdio_spi\temp\SdioSpi\sdio_spi_tmp.v" completed
+[100%] Generate report file "E:\Projects\E32C\test\src\sdio_spi\temp\SdioSpi\sdio_spi_syn.rpt.html" completed
+GowinSynthesis finish

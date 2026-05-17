@@ -12,8 +12,7 @@ module tb_boot_smoke;
   wire soc_activity, illegal_instr, core_halted_obs;
   wire [31:0] gpio_out_obs, core_pc_obs;
   wire if_req_obs, if_resp_obs, if_stall_obs;
-
-  soc_top #(
+soc_top #(
     .RAM_WORDS(256),
     .PSRAM_WORDS(256),
     .ENABLE_FW_BOOTLOAD(1'b1),

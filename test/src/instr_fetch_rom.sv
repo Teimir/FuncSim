@@ -1,7 +1,7 @@
-// Instruction ROM: 4 byte-wide block RAMs (Gowin-friendly). Init via lane hex from gen_firmware_hex.py.
+// Instruction ROM: 4 byte-wide block RAMs (Gowin BSRAM). Init via firmware_b0..b3.hex.
 // Do not use $readmemh on a [31:0] array — Gowin infers ~50k+ DFF instead of BSRAM.
 module instr_fetch_rom #(
-  parameter integer WORDS = 512,
+  parameter integer WORDS = 128,
   parameter        INIT_B0 = "firmware_b0.hex",
   parameter        INIT_B1 = "firmware_b1.hex",
   parameter        INIT_B2 = "firmware_b2.hex",
@@ -32,6 +32,7 @@ module instr_fetch_rom #(
     $readmemh(INIT_B3, mem_b3);
   end
 
+  // 2-cycle read; ignore held req_valid while pending (core keeps req high in ST_FETCH_WAIT).
   always_ff @(posedge clk) begin
     if (!rst_n) begin
       pending    <= 1'b0;
@@ -39,7 +40,7 @@ module instr_fetch_rom #(
       resp_data  <= 32'h0;
     end else begin
       resp_valid <= 1'b0;
-      if (req_valid) begin
+      if (req_valid && !pending) begin
         idx_q   <= req_addr[ADDR_MSB:2];
         pending <= 1'b1;
       end else if (pending) begin

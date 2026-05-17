@@ -42,6 +42,7 @@ ignore = ["E501"]
 
 [project.scripts]
 e32c-debug-gui = "cli.debug_gui.app:main"
+e32c-gdb-server = "cli.gdb_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

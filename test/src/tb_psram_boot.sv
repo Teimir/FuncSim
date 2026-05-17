@@ -11,8 +11,7 @@ module tb_psram_boot;
   wire sd_spi_sck, sd_spi_mosi, sd_spi_cs_n;
   wire soc_activity, illegal_instr, core_halted_obs;
   wire [31:0] gpio_out_obs, core_pc_obs;
-
-  soc_top #(
+soc_top #(
     .RAM_WORDS(256),
     .PSRAM_WORDS(256),
     .ENABLE_FW_BOOTLOAD(1'b1),

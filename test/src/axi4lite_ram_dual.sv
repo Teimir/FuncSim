@@ -1,11 +1,15 @@
 // Two contiguous AXI RAM banks: bank0 @ BASE, bank1 @ BASE + BANK0_WORDS*4.
+// Optional reset copy of firmware_rom.svh into bank0 (bootloader / PZU image).
 module axi4lite_ram_dual #(
   parameter integer BANK0_WORDS = 8192,
   parameter integer BANK1_WORDS = 8192,
-  parameter [31:0] BASE_ADDR = 32'h0000_0000
+  parameter [31:0] BASE_ADDR = 32'h0000_0000,
+  parameter bit ENABLE_FW_BOOTLOAD = 1'b0,
+  parameter bit BOOT_INIT_MEMH = 1'b0
 ) (
   input  logic        clk,
   input  logic        rst_n,
+  output logic        fw_ready,
   input  logic        s_awvalid,
   output logic        s_awready,
   input  logic [31:0] s_awaddr,
@@ -31,7 +35,9 @@ module axi4lite_ram_dual #(
   logic [31:0] b0_awaddr, b0_wdata, b0_araddr, b0_rdata;
   logic [3:0]  b0_wstrb;
   logic [1:0]  b0_bresp, b0_rresp;
+  logic        b0_fw_ready;
 
+  logic        b1_fw_ready;
   logic        b1_awvalid, b1_wvalid, b1_arvalid, b1_bvalid, b1_rvalid;
   logic        b1_awready, b1_wready, b1_arready, b1_bready, b1_rready;
   logic [31:0] b1_awaddr, b1_wdata, b1_araddr, b1_rdata;
@@ -41,6 +47,7 @@ module axi4lite_ram_dual #(
   logic sel_aw, sel_w, sel_ar;
   logic in_b0, in_b1, in_r0, in_r1;
 
+  assign fw_ready = b0_fw_ready;
   assign sel_aw = (s_awaddr >= BANK1_BASE);
   assign sel_w  = (s_awaddr >= BANK1_BASE);
   assign sel_ar = (s_araddr >= BANK1_BASE);
@@ -83,10 +90,13 @@ module axi4lite_ram_dual #(
 
   axi4lite_ram #(
     .MEM_WORDS(BANK0_WORDS),
-    .BASE_ADDR(BASE_ADDR)
+    .BASE_ADDR(BASE_ADDR),
+    .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD),
+    .BOOT_INIT_MEMH(BOOT_INIT_MEMH)
   ) u_bank0 (
     .clk(clk),
     .rst_n(rst_n),
+    .fw_ready(b0_fw_ready),
     .s_awvalid(b0_awvalid),
     .s_awready(b0_awready),
     .s_awaddr(b0_awaddr),
@@ -108,10 +118,12 @@ module axi4lite_ram_dual #(
 
   axi4lite_ram #(
     .MEM_WORDS(BANK1_WORDS),
-    .BASE_ADDR(BANK1_BASE)
+    .BASE_ADDR(BANK1_BASE),
+    .ENABLE_FW_BOOTLOAD(1'b0)
   ) u_bank1 (
     .clk(clk),
     .rst_n(rst_n),
+    .fw_ready(b1_fw_ready),
     .s_awvalid(b1_awvalid),
     .s_awready(b1_awready),
     .s_awaddr(b1_awaddr),

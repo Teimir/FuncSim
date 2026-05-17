@@ -30,6 +30,11 @@ def add_sim_session_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="With --sd-image: create/truncate image with N sectors (512 bytes each)",
     )
+    parser.add_argument(
+        "--sd-spi",
+        action="store_true",
+        help="SD at +0x3000: SPI command registers (default: block LBA device)",
+    )
 
 
 def use_mmio_from_args(args: argparse.Namespace) -> bool:
@@ -47,6 +52,7 @@ def build_repl_memory(args: argparse.Namespace) -> tuple[Memory, Memory | System
             uart=uart,
             sd_image=args.sd_image,
             sd_create_sectors=args.sd_create_sectors,
+            sd_spi=bool(getattr(args, "sd_spi", False)),
         )
     else:
         mem = ram

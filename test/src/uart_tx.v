@@ -10,7 +10,8 @@ module uart_tx #(
   output reg        tx_data_ready,
   output            tx_pin
 );
-  localparam CYCLE = CLK_FRE * 1000000 / BAUD_RATE;
+  // Round bit period: actual_baud ≈ CLK_Hz / (CYCLE * 10) for 8N1.
+  localparam integer CYCLE = (CLK_FRE * 1_000_000 + BAUD_RATE / 2) / BAUD_RATE;
 
   localparam S_IDLE      = 3'd1;
   localparam S_START     = 3'd2;

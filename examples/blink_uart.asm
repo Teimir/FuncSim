@@ -1,21 +1,46 @@
-# Blink + UART ~1 Hz @ 27 MHz. Delay = 1350 x 20000 iterations per BL\n.
+# Blink + UART ~1 Hz @ 27 MHz. "BL\r\n" each loop; wait TX idle (STATUS bit1).
+# UART @ 0xFFFF1000 (r23). STATUS @ +8. Mask TX_IDLE = 2 in r16.
 
 MOV 21 -1
 MOV 22 16
 SLL 21 22 21
 ADDI 21 23 4096
 
-MOV 10 66
-MOV 11 76
-MOV 19 10
+MOV 16 2
+
 MOV 15 40
 MOV 14 60
 MOV 13 56
 
 # loop @ 40:
+MOV 10 66
 STR 23 10 1 0
+wt0:
+LDR 23 20 15 8
+ANDS 20 16 0
+JZ wt0
+
+MOV 11 76
 STR 23 11 1 0
+wt1:
+LDR 23 20 15 8
+ANDS 20 16 0
+JZ wt1
+
+MOV 12 13
+STR 23 12 1 0
+wt2:
+LDR 23 20 15 8
+ANDS 20 16 0
+JZ wt2
+
+MOV 19 10
 STR 23 19 1 0
+wt3:
+LDR 23 20 15 8
+ANDS 20 16 0
+JZ wt3
+
 ADDI 0 25 1350
 
 # delay_outer @ 56:

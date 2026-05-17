@@ -4,8 +4,13 @@
 mmio_base: 0xFFFF0000
 window_size: 0x4000
 
-# Devices on the APB fabric (4 KiB decode slots: compare paddr[31:12] with base[31:12]).
-# python_region_bytes: aperture size used by the functional SystemBus (may differ from RTL register map).
+profiles:
+  sim_default:
+    sd_mode: block
+  tn9k_fpga:
+    sd_mode: spi
+    sd_backend: gowin_ip
+
 devices:
   gpio:
     offset: 0x0000
@@ -19,8 +24,28 @@ devices:
     offset: 0x2000
     python_region_bytes: 0x20
     rtl_apb: true
-  sd_spi:
+  sd:
     offset: 0x3000
     python_region_bytes: 0x210
     rtl_apb: true
-    # RTL: SPI register block (apb_sd_spi). Python: block device with sector buffer (same base offset).
+    modes:
+      block:
+        python_region_bytes: 0x210
+        registers:
+          - { name: CTRL,   offset: 0x00, access: w }
+          - { name: STATUS, offset: 0x04, access: r }
+          - { name: LBA,    offset: 0x08, access: rw }
+          - { name: DATA,   offset: 0x10, size: 0x200, access: rw }
+      spi:
+        python_region_bytes: 0x28
+        registers:
+          - { name: CTRL,    offset: 0x00, access: rw }
+          - { name: DIV,     offset: 0x04, access: rw }
+          - { name: CMD,     offset: 0x08, access: rw }
+          - { name: ARG,     offset: 0x0c, access: rw }
+          - { name: RESP0,   offset: 0x10, access: r }
+          - { name: STATUS,  offset: 0x14, access: r }
+          - { name: BLKIDX,  offset: 0x18, access: rw }
+          - { name: DATAIX,  offset: 0x1c, access: rw }
+          - { name: DATARD,  offset: 0x20, access: r }
+          - { name: DATAWR,  offset: 0x24, access: w }

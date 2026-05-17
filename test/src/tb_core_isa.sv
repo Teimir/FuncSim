@@ -10,8 +10,7 @@ module tb_core_isa;
   wire sd_spi_sck, sd_spi_mosi, sd_spi_cs_n;
   wire soc_activity, illegal_instr, core_halted_obs, if_req_obs, if_resp_obs, if_stall_obs;
   wire [31:0] gpio_out_obs, core_pc_obs;
-
-  soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256)) dut (
+soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(1'b0),
@@ -46,7 +45,6 @@ module tb_core_isa;
     .if_resp_obs(if_resp_obs),
     .if_stall_obs(if_stall_obs)
   );
-
   initial begin
     #1;
     // ADDI r1=0 res=1 imm=5; HALT — same image as tb_equiv_basic (after PSRAM $readmemh)

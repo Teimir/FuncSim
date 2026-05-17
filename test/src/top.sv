@@ -13,12 +13,18 @@ module soc_top #(
   parameter ENABLE_TIMER = 1,
   parameter ENABLE_GPIO = 1,
   parameter ENABLE_SD_SPI = 0,
+  parameter bit SD_MMIO_MODE = 1'b1,
+  parameter bit SD_BACKEND = 1'b0,
+  parameter bit SD_USE_CARD_MEM = 1'b1,
   parameter ENABLE_FW_BOOTLOAD = 1'b0,
+  parameter BOOT_INIT_MEMH = 1'b0,
   // Tang Nano 9K: simple BRAM (no PSRAM boot ROM) saves ~2k LUT.
   parameter USE_FPGA_RAM = 1'b0,
   // Simulation may preload hex; FPGA relies on firmware_rom.svh boot copy only.
   parameter USE_READMEMH = 1'b1,
-  parameter integer PSRAM_READ_LATENCY = 3
+  parameter integer PSRAM_READ_LATENCY = 3,
+  parameter int UART_CLK_MHZ = 27,
+  parameter int UART_BAUD = 115200
 ) (
   input logic        clk,
   input logic        rst_n,
@@ -45,6 +51,11 @@ module soc_top #(
   output logic        sd_spi_mosi,
   input logic        sd_spi_miso,
   output logic        sd_spi_cs_n,
+  inout wire          IO_sdio_cmd,
+  inout wire          IO_sdio_dat0,
+  inout wire          IO_sdio_dat1_irq,
+  inout wire          IO_sdio_dat2_rw,
+  inout wire          IO_sdio_dat3_cd,
   output logic        soc_activity,
   output logic        illegal_instr,
   output logic [31:0] gpio_out_obs,
@@ -62,7 +73,7 @@ module soc_top #(
   logic icache_stall_w;
   logic mem_fw_ready;
   logic boot_if_hold;
-  assign boot_if_hold = (!USE_FPGA_RAM) && ENABLE_FW_BOOTLOAD && !mem_fw_ready;
+  assign boot_if_hold = ENABLE_FW_BOOTLOAD && !mem_fw_ready;
   logic core_d_awvalid;
   logic core_d_awready;
   logic [31:0] core_d_awaddr;
@@ -445,15 +456,17 @@ module soc_top #(
   generate
     if (USE_FPGA_RAM) begin : g_mem_ram
       localparam integer MEM_WORDS_P = (PSRAM_WORDS != 4096) ? PSRAM_WORDS : RAM_WORDS;
-      assign mem_fw_ready = 1'b1;
       if (USE_DUAL_RAM) begin : g_mem_dual
         axi4lite_ram_dual #(
           .BANK0_WORDS(MEM_WORDS_P),
           .BANK1_WORDS(RAM_BANK1_WORDS),
-          .BASE_ADDR(32'h0000_0000)
+          .BASE_ADDR(32'h0000_0000),
+          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD),
+          .BOOT_INIT_MEMH(BOOT_INIT_MEMH)
         ) u_ram_dual (
           .clk(clk),
           .rst_n(rst_n),
+          .fw_ready(mem_fw_ready),
           .s_awvalid(s0_awvalid),
           .s_awready(s0_awready),
           .s_awaddr(s0_awaddr),
@@ -475,10 +488,13 @@ module soc_top #(
       end else begin : g_mem_single
         axi4lite_ram #(
           .MEM_WORDS(MEM_WORDS_P),
-          .BASE_ADDR(32'h0000_0000)
+          .BASE_ADDR(32'h0000_0000),
+          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD),
+          .BOOT_INIT_MEMH(BOOT_INIT_MEMH)
         ) u_ram (
           .clk(clk),
           .rst_n(rst_n),
+          .fw_ready(mem_fw_ready),
           .s_awvalid(s0_awvalid),
           .s_awready(s0_awready),
           .s_awaddr(s0_awaddr),
@@ -535,14 +551,21 @@ module soc_top #(
     .ENABLE_UART(ENABLE_UART),
     .ENABLE_TIMER(ENABLE_TIMER),
     .ENABLE_GPIO(ENABLE_GPIO),
-    .ENABLE_SD_SPI(ENABLE_SD_SPI)
+    .ENABLE_SD_SPI(ENABLE_SD_SPI),
+    .SD_MMIO_MODE(SD_MMIO_MODE),
+    .SD_BACKEND(SD_BACKEND),
+    .SD_USE_CARD_MEM(SD_USE_CARD_MEM),
+    .UART_CLK_MHZ(UART_CLK_MHZ),
+    .UART_BAUD(UART_BAUD)
   ) u_apb_dec (
     .pclk(clk), .presetn(rst_n),
     .psel(psel), .penable(penable), .pwrite(pwrite),
     .paddr(paddr), .pwdata(pwdata),
     .prdata(prdata), .pready(pready), .pslverr(pslverr),
     .uart_irq(uart_irq), .timer_irq(timer_irq), .sd_spi_irq(sd_spi_irq), .gpio_out(gpio_out), .uart_tx(uart_tx), .uart_rx(uart_rx),
-    .sd_spi_sck(sd_spi_sck), .sd_spi_mosi(sd_spi_mosi), .sd_spi_miso(sd_spi_miso), .sd_spi_cs_n(sd_spi_cs_n)
+    .sd_spi_sck(sd_spi_sck), .sd_spi_mosi(sd_spi_mosi), .sd_spi_miso(sd_spi_miso), .sd_spi_cs_n(sd_spi_cs_n),
+    .IO_sdio_cmd(IO_sdio_cmd), .IO_sdio_dat0(IO_sdio_dat0), .IO_sdio_dat1_irq(IO_sdio_dat1_irq),
+    .IO_sdio_dat2_rw(IO_sdio_dat2_rw), .IO_sdio_dat3_cd(IO_sdio_dat3_cd)
   );
 
   assign irq_lines = {29'h0, sd_spi_irq, uart_irq, timer_irq};

@@ -10,8 +10,7 @@ module tb_equiv_basic;
   wire sd_spi_sck, sd_spi_mosi, sd_spi_cs_n;
   wire soc_activity, illegal_instr, core_halted_obs, if_req_obs, if_resp_obs, if_stall_obs;
   wire [31:0] gpio_out_obs, core_pc_obs;
-
-  soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256)) dut (
+soc_top #(.RAM_WORDS(256), .PSRAM_WORDS(256)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(1'b0),
@@ -46,7 +45,6 @@ module tb_equiv_basic;
     .if_resp_obs(if_resp_obs),
     .if_stall_obs(if_stall_obs)
   );
-
   initial begin
     // ADDI 0 1 5; HALT — little-endian word in PSRAM byte banks
     dut.g_mem_psram.u_psram.mem_b0[0] = 8'h05;

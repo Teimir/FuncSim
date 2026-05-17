@@ -8,8 +8,7 @@ module tb_soc_longrun;
   wire uart_tx, sd_sck, sd_mosi, sd_cs_n;
   reg uart_rx = 1'b1;
   reg sd_miso = 1'b1;
-
-  soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
+soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(1'b0),
@@ -36,7 +35,6 @@ module tb_soc_longrun;
     .sd_spi_miso(sd_miso),
     .sd_spi_cs_n(sd_cs_n)
   );
-
   `include "tb_psram_mem.svh"
 
   initial begin

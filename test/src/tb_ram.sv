@@ -29,6 +29,7 @@ module tb_ram;
   ) dut (
     .clk(clk),
     .rst_n(rst_n),
+    .fw_ready(),
     .s_awvalid(awvalid),
     .s_awready(awready),
     .s_awaddr(awaddr),

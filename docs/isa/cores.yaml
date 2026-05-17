@@ -1,0 +1,58 @@
+# Single source of truth for E32C core variants and SPR identity registers.
+# Regenerate: python scripts/gen_cores.py
+
+isa:
+  revision: 0x00010005
+  magic: 0xE32C
+
+family:
+  id: 1
+  name: E32C
+
+variants:
+  full:
+    id: 0
+    rtl_module: e32c_core
+    core_impl: 0
+    features:
+      mul: true
+      ldrex: true
+      pipeline_3: false
+      full_isa: true
+  tn9k:
+    id: 1
+    rtl_module: e32c_core_tn9k
+    core_impl: 0
+    features:
+      mul: false
+      ldrex: true
+      pipeline_3: false
+      full_isa: false
+  lite:
+    id: 2
+    rtl_module: e32c_core_lite
+    core_impl: 0
+    features:
+      mul: false
+      ldrex: false
+      pipeline_3: false
+      full_isa: false
+
+spr:
+  saved_irq_pc: 0
+  irq_vector: 1
+  irq_mask: 2
+  core_info: 3
+  isa_revision: 4
+  features: 5
+
+feature_bits:
+  mul: 0
+  ldrex: 1
+  pipeline_3: 2
+  full_isa: 3
+
+# Opcodes treated as illegal when the corresponding feature is disabled.
+feature_opcode_sets:
+  mul: [SMUL, MUL, UMULL, SMULL, MLA]
+  ldrex: [LDREX, STREX]

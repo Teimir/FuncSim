@@ -14,6 +14,10 @@ WRITESPR 21 1
 ADDI 0 20 1
 STR 24 20 15 16
 
+# One byte on UART right after boot (debug if timer IRQ is late).
+MOV 10 79
+STR 22 10 1 0
+
 EI
 idle:
 NOP

@@ -3,6 +3,9 @@ module apb_decoder #(
   parameter ENABLE_TIMER = 1,
   parameter ENABLE_GPIO = 1,
   parameter ENABLE_SD_SPI = 1,
+  parameter bit SD_MMIO_MODE = 1'b1,
+  parameter bit SD_BACKEND = 1'b0,
+  parameter bit SD_USE_CARD_MEM = 1'b1,
   parameter int UART_CLK_MHZ = 27,
   parameter int UART_BAUD = 115200
 ) (
@@ -25,7 +28,12 @@ module apb_decoder #(
   output logic        sd_spi_sck,
   output logic        sd_spi_mosi,
   input logic        sd_spi_miso,
-  output logic        sd_spi_cs_n
+  output logic        sd_spi_cs_n,
+  inout wire          IO_sdio_cmd,
+  inout wire          IO_sdio_dat0,
+  inout wire          IO_sdio_dat1_irq,
+  inout wire          IO_sdio_dat2_rw,
+  inout wire          IO_sdio_dat3_cd
 );
 `include "mmio_generated.svh"
   logic hit_uart;
@@ -111,7 +119,12 @@ module apb_decoder #(
 
   generate
     if (ENABLE_SD_SPI) begin : g_sdspi_on
-      (* keep = "true", syn_preserve = 1 *) apb_sd_spi u_sd_spi (
+      (* keep = "true", syn_preserve = 1 *) e32c_apb_sd_slot #(
+        .SD_MMIO_MODE(SD_MMIO_MODE),
+        .SD_BACKEND(SD_BACKEND),
+        .SD_USE_CARD_MEM(SD_USE_CARD_MEM),
+        .UART_CLK_MHZ(UART_CLK_MHZ)
+      ) u_sd_slot (
         .pclk(pclk),
         .presetn(presetn),
         .psel(sel_sd_spi),
@@ -126,7 +139,12 @@ module apb_decoder #(
         .spi_sck(sd_spi_sck),
         .spi_mosi(sd_spi_mosi),
         .spi_miso(sd_spi_miso),
-        .spi_cs_n(sd_spi_cs_n)
+        .spi_cs_n(sd_spi_cs_n),
+        .IO_sdio_cmd(IO_sdio_cmd),
+        .IO_sdio_dat0(IO_sdio_dat0),
+        .IO_sdio_dat1_irq(IO_sdio_dat1_irq),
+        .IO_sdio_dat2_rw(IO_sdio_dat2_rw),
+        .IO_sdio_dat3_cd(IO_sdio_dat3_cd)
       );
     end else begin : g_sdspi_off
       assign sd_spi_prdata = 32'h0;

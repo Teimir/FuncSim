@@ -50,9 +50,9 @@
 |--------|----------------------------------|-------------------|
 | UART | TX/RX очереди, мгновенный STATUS | `uart.sv` + stream test |
 | Timer | cycle counter hook | `timer.sv` |
-| SD | LBA + секторный буфер (файл на хосте) | `sd_spi.sv` (SPI протокол) |
+| SD | Block LBA **или** SPI registers (`--sd-spi`) | `sd_spi.sv` (SPI протокол) |
 
-Расхождения SD намеренные: Python — block-MMIO для драйверов; RTL — полный SPI для верификации на железе.
+Python: по умолчанию **block** MMIO @ `+0x3000`; флаг `--sd-spi` / `SystemBus(sd_spi=True)` переключает на **SPI command** регистры (см. `src/core/peripherals/sd_spi.py`, карта как в RTL `apb_sd_spi`).
 
 ## Стоимость инструкций (циклы)
 

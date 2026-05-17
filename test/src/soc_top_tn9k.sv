@@ -1,6 +1,12 @@
-// Tang Nano 9K: fetch in instr_fetch_rom (byte BRAM + firmware_b*.hex), dual 8 KiB data BRAM.
-// IF_ROM_USE_BRAM needs lane hex in Gowin project; comb fetch_rom_nop is the safe fallback.
-module soc_top_tn9k (
+// Tang Nano 9K: icache + dual BSRAM. Boot via firmware_rom.svh (reliable in Gowin; $readmemh paths often fail).
+module soc_top_tn9k #(
+  // Match real crystal/osc MHz if serial is garbled (try 28–30 on some boards).
+  parameter int UART_CLK_MHZ = 27,
+  parameter bit SD_MMIO_MODE = 1'b1,
+  parameter bit SD_BACKEND = 1'b0,
+  // Sector buffer (512x32) does not map to BSRAM on GW1NR; infers 16k DFF (limit 6693).
+  parameter bit SD_USE_CARD_MEM = 1'b0
+) (
   input logic        clk,
   input logic        rst_n,
   input logic        ext_awvalid,
@@ -35,29 +41,34 @@ module soc_top_tn9k (
   output logic        if_resp_obs,
   output logic        if_stall_obs
 );
-  // GW1NR-9: 26 BSRAM max. ~8 blocks per 4K-word bank, ~16 per 8K — dual 8K+8K = 32 (RP0002).
-  localparam integer TN9K_DATA_BANK0_WORDS = 8192;  // 32 KiB @ 0x0000_0000 (~16 BSRAM)
-  localparam integer TN9K_DATA_BANK1_WORDS = 4096;  // 16 KiB @ 0x0000_8000 (~8 BSRAM)
-  localparam integer TN9K_IF_ROM_WORDS = 512;
-  // 1: byte-lane BRAM ROM (add firmware_b0..b3.hex to Gowin). 0: comb fetch_rom_nop (proven on board).
-  localparam bit TN9K_IF_ROM_BRAM = 1'b0;
+  localparam integer TN9K_DATA_BANK0_WORDS = 8192;
+  localparam integer TN9K_DATA_BANK1_WORDS = 2048;
+
+  wire IO_sdio_cmd;
+  wire IO_sdio_dat0;
+  wire IO_sdio_dat1_irq;
+  wire IO_sdio_dat2_rw;
+  wire IO_sdio_dat3_cd;
 
   soc_top #(
+    .UART_CLK_MHZ(UART_CLK_MHZ),
     .RAM_WORDS(TN9K_DATA_BANK0_WORDS),
     .PSRAM_WORDS(TN9K_DATA_BANK0_WORDS),
     .RAM_BANK1_WORDS(TN9K_DATA_BANK1_WORDS),
     .USE_DUAL_RAM(1'b1),
-    .IF_ROM_WORDS(TN9K_IF_ROM_WORDS),
-    .IF_ROM_USE_BRAM(TN9K_IF_ROM_BRAM),
     .ENABLE_CORE(1),
     .USE_LITE_CORE(0),
     .USE_TN9K_CORE(1'b1),
-    .FORCE_IF_NOP_FETCH(1'b1),
+    .FORCE_IF_NOP_FETCH(1'b0),
     .ENABLE_UART(1),
     .ENABLE_TIMER(1),
     .ENABLE_GPIO(1),
-    .ENABLE_SD_SPI(0),
-    .ENABLE_FW_BOOTLOAD(1'b0),
+    .ENABLE_SD_SPI(1),
+    .SD_MMIO_MODE(SD_MMIO_MODE),
+    .SD_BACKEND(SD_BACKEND),
+    .SD_USE_CARD_MEM(SD_USE_CARD_MEM),
+    .ENABLE_FW_BOOTLOAD(1'b1),
+    .BOOT_INIT_MEMH(1'b0),
     .USE_FPGA_RAM(1'b1),
     .USE_READMEMH(1'b0)
   ) u_soc (
@@ -86,6 +97,11 @@ module soc_top_tn9k (
     .sd_spi_mosi(sd_spi_mosi),
     .sd_spi_miso(sd_spi_miso),
     .sd_spi_cs_n(sd_spi_cs_n),
+    .IO_sdio_cmd(IO_sdio_cmd),
+    .IO_sdio_dat0(IO_sdio_dat0),
+    .IO_sdio_dat1_irq(IO_sdio_dat1_irq),
+    .IO_sdio_dat2_rw(IO_sdio_dat2_rw),
+    .IO_sdio_dat3_cd(IO_sdio_dat3_cd),
     .soc_activity(soc_activity),
     .illegal_instr(illegal_instr),
     .gpio_out_obs(gpio_out_obs),

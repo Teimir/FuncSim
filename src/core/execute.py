@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from core import flags as F
+from core.exceptions import IllegalInstruction
 from core.instruction import Instruction
 from core.mem_if import WordMemory
+from core.spr_constants import VARIANT_ILLEGAL_OPCODES
 from core.state import SPR_SAVED_IRQ_PC, CPUState
 
 
@@ -182,6 +184,10 @@ def execute(state: CPUState, mem: WordMemory, ins: Instruction) -> bool:
     m = ins.mnemonic
     f = ins.format
     fld = ins.fields
+
+    illegal = VARIANT_ILLEGAL_OPCODES.get(state.core_variant, frozenset())
+    if m in illegal:
+        raise IllegalInstruction(f"{m} not available on core variant {state.core_variant!r}")
 
     if m == "NOP" and f == "special_nop":
         return False

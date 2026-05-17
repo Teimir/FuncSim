@@ -14,8 +14,28 @@ venv/
 .env
 *.trace
 
-# FPGA / simulation artifacts (under test/)
+# Host link / compile junk
+a.out
+*.o
+*.exe
+
+# IDE / FPGA tool user state
+*.gprj.user
+
+# FPGA synthesis & P&R (Gowin)
 test/impl/
+test/fpga/impl/
+**/impl/pnr/
+**/impl/gwsynthesis/
+**/impl/temp/
+
+# Simulation (Icarus)
 test/out_*.vvp
 test/build_*.vvp
+test/out_*.vcd
 *.vvp
+*.vcd
+
+# Generated local test images
+examples/_*.img
+examples/*.img

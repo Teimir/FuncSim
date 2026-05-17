@@ -22,3 +22,16 @@ IO_LOC "user_led[4]" 15;
 IO_PORT "user_led[4]" PULL_MODE=UP DRIVE=8;
 IO_LOC "user_led[5]" 16;
 IO_PORT "user_led[5]" PULL_MODE=UP DRIVE=8;
+
+// TF card (SPI) — Sipeed Tang Nano 9K / LiteX spisdcard mapping
+IO_LOC "sd_spi_sck" 36;
+IO_PORT "sd_spi_sck" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "sd_spi_mosi" 37;
+IO_PORT "sd_spi_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "sd_spi_cs_n" 38;
+IO_PORT "sd_spi_cs_n" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "sd_spi_miso" 39;
+IO_PORT "sd_spi_miso" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+// TN9K TF slot is 4-wire SPI only (36–39). Package pins 43/44 are VSS/VCCIO, not IO.
+// SDIO inouts for Gowin IP stay inside the SoC (fpga_top_tn9k, SD_BACKEND=0 default).

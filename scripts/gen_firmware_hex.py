@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
+import time
 from pathlib import Path
 
 from core.asm import assemble_text
@@ -95,9 +97,34 @@ def patch_idle_jmp_loop(words: list[int]) -> None:
     return
 
 
+def _write_text_retry(path: Path, text: str, *, retries: int = 8) -> None:
+    """Write file on Windows even if Gowin/IDE briefly locks the old copy."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    last_err: OSError | None = None
+    for attempt in range(retries):
+        try:
+            tmp.write_text(text, encoding="ascii", newline="\n")
+            os.replace(tmp, path)
+            return
+        except OSError as exc:
+            last_err = exc
+            if tmp.exists():
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
+            if attempt + 1 < retries:
+                time.sleep(0.15 * (attempt + 1))
+    raise SystemExit(
+        f"Cannot write {path} ({last_err}). "
+        "Close Gowin IDE or any tool using test/src/firmware_b*.hex, then retry."
+    ) from last_err
+
+
 def write_bank(path: Path, words: list[int], byte_lane: int) -> None:
     lines = [f"{(w >> (8 * byte_lane)) & 0xFF:02x}\n" for w in words]
-    path.write_text("".join(lines), encoding="ascii")
+    _write_text_retry(path, "".join(lines))
 
 
 def write_instr_rom_hex(path: Path, words: list[int], rom_words: int) -> None:
@@ -107,7 +134,7 @@ def write_instr_rom_hex(path: Path, words: list[int], rom_words: int) -> None:
     if len(prog) > rom_words:
         raise SystemExit(f"firmware {len(prog)} words exceeds IF ROM size {rom_words}")
     lines = [f"{w:08x}\n" for w in prog[:rom_words]]
-    path.write_text("".join(lines), encoding="ascii")
+    _write_text_retry(path, "".join(lines))
 
 
 def write_fetch_rom_svh(path: Path, words: list[int], rom_words: int) -> None:
@@ -125,7 +152,7 @@ def write_fetch_rom_svh(path: Path, words: list[int], rom_words: int) -> None:
     for i, w in enumerate(prog[:rom_words]):
         lines.append(f"            {idx_w}'d{i}: forced_instr = 32'h{w:08x};\n")
     lines.append("            default: forced_instr = 32'h0000_0000;\n")
-    path.write_text("".join(lines), encoding="ascii")
+    _write_text_retry(path, "".join(lines))
 
 
 def write_rom_svh(path: Path, words: list[int]) -> None:
@@ -149,7 +176,7 @@ def write_rom_svh(path: Path, words: list[int]) -> None:
     lines.append("    endcase\n")
     lines.append("  end\n")
     lines.append("endfunction\n")
-    path.write_text("".join(lines), encoding="ascii")
+    _write_text_retry(path, "".join(lines))
 
 
 def main() -> int:
@@ -174,6 +201,11 @@ def main() -> int:
         "--skip-fetch-rom",
         action="store_true",
         help="Do not write fetch_rom_nop.svh (TN9K boot-RAM path)",
+    )
+    p.add_argument(
+        "--emit-store-hex",
+        action="store_true",
+        help="Write firmware_store_b*.hex for program store @ 0x0100_0000",
     )
     args = p.parse_args()
 
@@ -211,12 +243,19 @@ def main() -> int:
     if not args.skip_fetch_rom:
         write_fetch_rom_svh(out / "fetch_rom_nop.svh", words, args.if_rom_words)
         write_instr_rom_hex(out / "instr_rom.hex", words, args.if_rom_words)
+    if args.emit_store_hex:
+        write_bank(out / "firmware_store_b0.hex", words, 0)
+        write_bank(out / "firmware_store_b1.hex", words, 1)
+        write_bank(out / "firmware_store_b2.hex", words, 2)
+        write_bank(out / "firmware_store_b3.hex", words, 3)
 
     print(f"Wrote {len(words)} words from {args.asm}")
     print(f"  handler @ 0x{args.handler_addr:x}, vector 0x{vector or _EXPECTED_VECTOR:x}")
     extras = "firmware_b0..b3.hex, firmware_rom.svh"
     if not args.skip_fetch_rom:
         extras += ", fetch_rom_nop.svh, instr_rom.hex"
+    if args.emit_store_hex:
+        extras += ", firmware_store_b0..b3.hex"
     print(f"  -> {out}/{extras}")
     return 0
 

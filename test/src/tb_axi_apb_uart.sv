@@ -29,8 +29,7 @@ module tb_axi_apb_uart;
   wire sd_spi_sck, sd_spi_mosi, sd_spi_cs_n;
   wire soc_activity, illegal_instr, core_halted_obs, if_req_obs, if_resp_obs, if_stall_obs;
   wire [31:0] gpio_out_obs, core_pc_obs;
-
-  soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
+soc_top #(.RAM_WORDS(1024), .PSRAM_WORDS(1024)) dut (
     .clk(clk),
     .rst_n(rst_n),
     .ext_awvalid(m_awvalid),
@@ -65,7 +64,6 @@ module tb_axi_apb_uart;
     .if_resp_obs(if_resp_obs),
     .if_stall_obs(if_stall_obs)
   );
-
   `include "tb_axi_tasks.svh"
 
   localparam UART_TXDATA = `E32C_UART_BASE + 32'h0;

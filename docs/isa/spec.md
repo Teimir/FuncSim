@@ -167,9 +167,15 @@
 | 0      | SAVED_IRQ_PC | Адрес возврата из прерывания                                                                                                                  |
 | 1      | IRQ_VECTOR   | Вектор обработчика (младшие 32 бита)                                                                                                          |
 | 2      | IRQ_MASK     | Бит `i` = 1: линия прерывания `i` **замаскирована** (не доставляется). Значение по умолчанию при отсутствии записи — 0 (все линии разрешены). |
+| 3      | CORE_INFO    | **Только чтение.** Упакованный ID: magic `0xE32C` [31:16], family [15:8], variant [7:4], impl [3:0]. См. `docs/isa/cores.yaml`.               |
+| 4      | ISA_REVISION | **Только чтение.** Версия ISA: `(major<<16)                                                                                                   |
+| 5      | FEATURES     | **Только чтение.** Битовая маска возможностей варианта (MUL, LDREX, …).                                                                       |
+| 6–31   | —            | Чтение `0`; запись игнорируется.                                                                                                              |
 
 
-**Модель прерывания (RTL `csr_irq`):** линия таймера (0) — **уровневая** (`irq_enable && irq_pending`). Пока обработчик не завершён, **`in_service`** блокирует повторный вход; **IRET** сбрасывает `in_service` и восстанавливает **IP** из **SPR[SAVED_IRQ_PC]**. В FETCH при `irq_pending` ядро переходит на **SPR[IRQ_VECTOR]** и фиксирует **SAVED_IRQ_PC ← IP** (адрес прерыдённой инструкции). Симулятор Python: `raise_irq(return_pc, line)` при **Intenable**, маске и `not irq_in_service`; **IRET** сбрасывает `irq_in_service`.
+`WRITESPR` в индексы 3–5 не изменяет значение. Индекс SPR кодируется в битах инструкции `[15:11]`.
+
+**Модель прерывания (RTL `csr_spr`):** линия таймера (0) — **уровневая** (`irq_enable && irq_pending`). Пока обработчик не завершён, `**in_service`** блокирует повторный вход; **IRET** сбрасывает `in_service` и восстанавливает **IP** из **SPR[SAVED_IRQ_PC]**. В FETCH при `irq_pending` ядро переходит на **SPR[IRQ_VECTOR]** и фиксирует **SAVED_IRQ_PC ← IP** (адрес прерыдённой инструкции). Симулятор Python: `raise_irq(return_pc, line)` при **Intenable**, маске и `not irq_in_service`; **IRET** сбрасывает `irq_in_service`.
 
 ## Особые слова
 
@@ -185,7 +191,7 @@
 ## Расширения памяти (реализовано в функциональной модели)
 
 - **LDRPRE / STRPRE:** `R[raddr] ← R[raddr] + imm`, затем load/store по обновлённому базовому адресу.
-- **LDREX / STREX:** упрощённый монитор эксклюзивного доступа (`CPUState.exclusive_*`); **STREX** `raddr rsrc rstatus imm` — при успехе записывает `rsrc` в память и `rstatus←0`, иначе `rstatus←1`.
+- **LDREX / STREX:** упрощённый монитор эксклюзивного доступа (`CPUState.exclusive`_*); **STREX** `raddr rsrc rstatus imm` — при успехе записывает `rsrc` в память и `rstatus←0`, иначе `rstatus←1`.
 - **PUSH / POP** в ассемблере — псевдо-операции (разворачиваются в **SUBI**/**STRPOST** и **LDRPOST**/**ADDI** на **R30**).
 
 ---

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gowin-synthesis-project>
+<Project>
+    <Version>beta</Version>
+    <Device id="GW1NR-9C" package="QFN88P" speed="6" partNumber="GW1NR-LV9QN88PC6/I5"/>
+    <FileList>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/fifo.v" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/sdio_slave_controller.v" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/sdio_slave_controller_top.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/sdio_spi.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/sdio_spi_ctrl.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/SDIO_SPI_Top.v" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/spi_master_tx.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/spi_rx_fifo_top.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/spi_tx_fifo_top.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/user_cpu_slave_reg_if.vp" type="verilog"/>
+        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data/user_tuning_pattern.vp" type="verilog"/>
+    </FileList>
+    <OptionList>
+        <Option type="disable_insert_pad" value="1"/>
+        <Option type="include_path" value="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/SDIO_SPI/data"/>
+        <Option type="include_path" value="E:/Projects/E32C/test/src/sdio_spi/temp/SdioSpi"/>
+        <Option type="output_file" value="sdio_spi.vg"/>
+        <Option type="output_template" value="sdio_spi_tmp.v"/>
+        <Option type="ram_balance" value="1"/>
+        <Option type="ram_rw_check" value="1"/>
+        <Option type="vcc" value="1.2"/>
+        <Option type="vccx" value="3.3"/>
+        <Option type="verilog_language" value="sysv-2017"/>
+    </OptionList>
+</Project>

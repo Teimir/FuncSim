@@ -1,0 +1,158 @@
+# TN9K demo: UART + Timer IRQ + SD SPI (shim). Handler @ 0x200 (main is >0x100).
+# MMIO word access: STR/LDR mask 15. r22=UART, r24=Timer, r25=SD.
+
+DI
+MOV 21 -1
+MOV 22 16
+SLL 21 22 21
+ADDI 21 22 4096
+ADDI 21 24 8192
+ADDI 21 25 12288
+
+MOV 16 2
+MOV 17 1
+MOV 18 2
+MOV 19 16
+
+ADDI 0 21 512
+WRITESPR 21 1
+
+# 'U'
+MOV 10 85
+B pu0
+pu0:
+LDR 22 20 15 8
+ANDS 20 16 0
+JZ pu0
+STR 22 10 1 0
+
+# 'S'
+MOV 10 83
+B pu1
+pu1:
+LDR 22 20 15 8
+ANDS 20 16 0
+JZ pu1
+STR 22 10 1 0
+
+MOV 10 1
+STR 25 10 15 0
+
+# CMD0
+MOV 11 0
+STR 25 11 15 12
+MOV 10 256
+STR 25 10 15 8
+B sw0
+sw0:
+LDR 25 20 15 20
+ANDS 20 17 0
+JNZ sw0
+LDR 25 20 15 20
+ANDS 20 19 0
+JNZ sd_fail
+
+# CMD8
+MOV 11 426
+STR 25 11 15 12
+MOV 10 264
+STR 25 10 15 8
+B sw1
+sw1:
+LDR 25 20 15 20
+ANDS 20 17 0
+JNZ sw1
+LDR 25 20 15 20
+ANDS 20 19 0
+JNZ sd_fail
+
+# CMD55
+MOV 11 0
+STR 25 11 15 12
+MOV 10 311
+STR 25 10 15 8
+B sw2
+sw2:
+LDR 25 20 15 20
+ANDS 20 17 0
+JNZ sw2
+LDR 25 20 15 20
+ANDS 20 19 0
+JNZ sd_fail
+
+# CMD41
+MOV 11 0
+STR 25 11 15 12
+MOV 10 297
+STR 25 10 15 8
+B sw3
+sw3:
+LDR 25 20 15 20
+ANDS 20 17 0
+JNZ sw3
+LDR 25 20 15 20
+ANDS 20 19 0
+JNZ sd_fail
+LDR 25 20 15 20
+ANDS 20 18 0
+JZ sd_fail
+
+# CMD17 sector 0
+MOV 11 0
+STR 25 11 15 12
+MOV 10 273
+STR 25 10 15 8
+B sw4
+sw4:
+LDR 25 20 15 20
+ANDS 20 17 0
+JNZ sw4
+MOV 10 0
+STR 25 10 15 24
+MOV 10 0
+STR 25 10 15 28
+LDR 25 20 15 20
+ANDS 20 19 0
+JNZ sd_fail
+
+# 'G'
+MOV 10 71
+B pg
+pg:
+LDR 22 20 15 8
+ANDS 20 16 0
+JZ pg
+STR 22 10 1 0
+B timer_arm
+
+sd_fail:
+MOV 10 69
+B pe
+pe:
+LDR 22 20 15 8
+ANDS 20 16 0
+JZ pe
+STR 22 10 1 0
+
+timer_arm:
+# Period low/high @ timer+8/+12. Sim: 2000; FPGA build patches to 27 MHz ticks (~1 Hz).
+MOV 10 640
+STR 24 10 15 8
+MOV 10 410
+STR 24 10 15 12
+MOV 10 1
+STR 24 10 15 16
+
+# 'R'
+MOV 10 82
+B pr
+pr:
+LDR 22 20 15 8
+ANDS 20 16 0
+JZ pr
+STR 22 10 1 0
+
+EI
+idle:
+NOP
+B idle

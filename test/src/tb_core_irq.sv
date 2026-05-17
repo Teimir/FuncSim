@@ -25,8 +25,7 @@ module tb_core_irq;
 
   wire uart_tx;
   reg  uart_rx = 1'b1;
-
-  soc_top #(
+soc_top #(
     .RAM_WORDS(512),
     .PSRAM_WORDS(512),
     .ENABLE_FW_BOOTLOAD(1'b0),
@@ -69,7 +68,7 @@ module tb_core_irq;
     m_araddr = 0;
     m_rready = 0;
 
-    // NOP at reset; HALT at default IRQ vector 0x100 (csr_irq reset)
+    // NOP at reset; HALT at default IRQ vector 0x100 (csr_spr reset)
     psram_write_word(0, 32'h0000_0000);
     psram_write_word(1, 32'h0000_0000);
     psram_write_word(2, 32'h0000_0000);

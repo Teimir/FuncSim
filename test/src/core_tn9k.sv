@@ -1,4 +1,6 @@
-// Minimal E32C core for Tang Nano 9K (subset ISA + timer IRQ: EI/DI/IRET/WRITESPR).
+// E32C core for Tang Nano 9K: TN9K ISA subset, 2-stage fetch (27 MHz target).
+`include "cores_generated.svh"
+
 module e32c_core_tn9k (
   input  logic        clk,
   input  logic        rst_n,
@@ -33,33 +35,58 @@ module e32c_core_tn9k (
   output logic [31:0] dbg_r3,
   output logic [31:0] dbg_r4
 );
-  localparam [5:0] OP_LDR       = 6'd1;
-  localparam [5:0] OP_STR       = 6'd2;
-  localparam [5:0] OP_ANDS      = 6'd14;
-  localparam [5:0] OP_JMP       = 6'd16;
-  localparam [5:0] OP_JZ        = 6'd17;
-  localparam [5:0] OP_JNZ       = 6'd18;
-  localparam [5:0] OP_XOR       = 6'd39;
-  localparam [5:0] OP_SLL       = 6'd40;
-  localparam [5:0] OP_WRITESPR  = 6'd25;
-  localparam [5:0] OP_ADDI      = 6'd48;
-  localparam [5:0] OP_SUBI      = 6'd49;
-  localparam [5:0] OP_EI        = 6'd50;
-  localparam [5:0] OP_DI        = 6'd51;
-  localparam [5:0] OP_IRET      = 6'd62;
+  localparam [5:0] OP_LDR      = 6'd1;
+  localparam [5:0] OP_STR      = 6'd2;
+  localparam [5:0] OP_LDRPRE   = 6'd5;
+  localparam [5:0] OP_STRPRE   = 6'd6;
+  localparam [5:0] OP_LDREX    = 6'd7;
+  localparam [5:0] OP_SMUL     = 6'd4;
+  localparam [5:0] OP_UMULL    = 6'd8;
+  localparam [5:0] OP_SMULL    = 6'd9;
+  localparam [5:0] OP_MLA      = 6'd10;
+  localparam [5:0] OP_JMP      = 6'd16;
+  localparam [5:0] OP_JZ       = 6'd17;
+  localparam [5:0] OP_JNZ      = 6'd18;
+  localparam [5:0] OP_JC       = 6'd19;
+  localparam [5:0] OP_JS       = 6'd20;
+  localparam [5:0] OP_JO       = 6'd21;
+  localparam [5:0] OP_LDRPOST  = 6'd22;
+  localparam [5:0] OP_STRPOST  = 6'd23;
+  localparam [5:0] OP_BJ       = 6'd24;
+  localparam [5:0] OP_WRITESPR = 6'd25;
+  localparam [5:0] OP_STREX    = 6'd32;
+  localparam [5:0] OP_ADD      = 6'd33;
+  localparam [5:0] OP_SUB      = 6'd34;
+  localparam [5:0] OP_ADDS     = 6'd35;
+  localparam [5:0] OP_SUBS     = 6'd36;
+  localparam [5:0] OP_ANDS     = 6'd14;
+  localparam [5:0] OP_AND      = 6'd37;
+  localparam [5:0] OP_OR       = 6'd38;
+  localparam [5:0] OP_XOR      = 6'd39;
+  localparam [5:0] OP_SLL      = 6'd40;
+  localparam [5:0] OP_SLR      = 6'd41;
+  localparam [5:0] OP_SAL      = 6'd42;
+  localparam [5:0] OP_MUL      = 6'd44;
+  localparam [5:0] OP_ADDI     = 6'd48;
+  localparam [5:0] OP_SUBI     = 6'd49;
+  localparam [5:0] OP_EI       = 6'd50;
+  localparam [5:0] OP_DI       = 6'd51;
+  localparam [5:0] OP_READSPR  = 6'd52;
+  localparam [5:0] OP_IRET     = 6'd62;
 
-  localparam [2:0] ST_FETCH_REQ    = 3'd0;
-  localparam [2:0] ST_FETCH_WAIT   = 3'd1;
-  localparam [2:0] ST_EXEC         = 3'd2;
-  localparam [2:0] ST_MEM_RD_REQ   = 3'd3;
-  localparam [2:0] ST_MEM_RD_WAIT  = 3'd4;
-  localparam [2:0] ST_MEM_WR_REQ   = 3'd5;
-  localparam [2:0] ST_MEM_WR_WAIT  = 3'd6;
+  localparam [2:0] ST_FETCH_REQ   = 3'd0;
+  localparam [2:0] ST_FETCH_WAIT  = 3'd1;
+  localparam [2:0] ST_EXEC        = 3'd2;
+  localparam [2:0] ST_MEM_RD_REQ  = 3'd3;
+  localparam [2:0] ST_MEM_RD_WAIT = 3'd4;
+  localparam [2:0] ST_MEM_WR_REQ  = 3'd5;
+  localparam [2:0] ST_MEM_WR_WAIT = 3'd6;
 
   logic [2:0]  st;
-  logic [31:0] regs [0:31];
+  logic [31:0] regs[0:31];
   logic [31:0] ir;
-  logic        zf;
+  logic        int_enable;
+  logic        zf, cf, vf, sf;
   logic        d_awvalid_r, d_wvalid_r, d_bready_r, d_arvalid_r, d_rready_r;
   logic [31:0] d_awaddr_r, d_wdata_r, d_araddr_r;
   logic [3:0]  d_wstrb_r;
@@ -67,35 +94,49 @@ module e32c_core_tn9k (
   logic [3:0]  mem_mask;
   logic        illegal_instr_r;
 
-  logic        int_enable;
   logic        csr_wr_en;
-  logic [1:0]  csr_wr_idx;
+  logic [4:0]  csr_wr_idx;
   logic [31:0] csr_wr_data;
-  logic [1:0]  csr_rd_idx;
+  logic [4:0]  csr_rd_idx;
+  logic [4:0]  csr_rd_idx_eff;
   logic [31:0] csr_rd_data;
   logic        irq_pending;
   logic        irq_ack_r;
   logic [31:0] irq_vector;
   logic [31:0] saved_irq_pc;
 
-  logic [4:0]  r1, r2, rd, br_raddr, spr_idx;
-  logic [5:0]  op;
-  logic [31:0] a, b;
-  logic [15:0] imm16;
-  logic [10:0] imm11;
-  logic [31:0] imm16_sext, imm11_sext;
-  logic [31:0] alu_res;
-  integer      i;
+  logic [5:0]  op_r;
+  logic [4:0]  r1_r, r2_r, rd_r, bj_raddr_r;
+  logic [3:0]  cond_r;
+  logic [10:0] bj_imm11_r;
+  logic [15:0] imm16_r;
+  logic [10:0] imm11_r;
+  logic [4:0]  mask_r;
 
-  wire iret_exec = (st == ST_EXEC) && (op == OP_IRET) && (ir != 32'hFFFF_FFFF);
+  logic [31:0] a, b;
+  logic [31:0] imm16_sext, imm11_sext, bj_imm11_sext;
+  logic [31:0] res;
+  logic [31:0] exec_rhs;
+  logic [31:0] load_val;
+  logic [32:0] sum33;
+  logic        take_branch;
+  integer      i;
 
   function automatic logic [31:0] gpr_read(input logic [4:0] idx);
     gpr_read = (idx == 5'd0) ? 32'h0 : ((idx == 5'd31) ? dbg_pc : regs[idx]);
   endfunction
 
-  assign irq_ack_r = irq_pending && (st == ST_FETCH_REQ) && !if_stall && !dbg_halted;
+  wire iret_exec = (st == ST_EXEC) && (op_r == OP_IRET) && (ir != 32'hFFFF_FFFF);
 
-  csr_irq u_csr_irq (
+  assign irq_ack_r = irq_pending && (st == ST_FETCH_REQ) && !if_stall && !dbg_halted;
+  assign csr_rd_idx_eff =
+      (st == ST_EXEC && op_r == OP_READSPR) ? ir[15:11] : csr_rd_idx;
+
+  csr_spr #(
+    .CORE_INFO_VAL(E32C_CORE_INFO_TN9K),
+    .ISA_REVISION_VAL(E32C_ISA_REVISION),
+    .FEATURES_VAL(E32C_FEATURES_TN9K)
+  ) u_csr_spr (
     .clk(clk),
     .rst_n(rst_n),
     .cur_pc(dbg_pc),
@@ -106,7 +147,7 @@ module e32c_core_tn9k (
     .wr_en(csr_wr_en),
     .wr_idx(csr_wr_idx),
     .wr_data(csr_wr_data),
-    .rd_idx(csr_rd_idx),
+    .rd_idx(csr_rd_idx_eff),
     .rd_data(csr_rd_data),
     .irq_pending(irq_pending),
     .irq_vector(irq_vector),
@@ -114,25 +155,45 @@ module e32c_core_tn9k (
   );
 
   always_comb begin
-    r1       = ir[25:21];
-    r2       = ir[20:16];
-    rd       = ir[15:11];
-    spr_idx  = ir[15:11];
-    br_raddr = ir[25:21];
-    op       = ir[31:26];
-    a        = gpr_read(r1);
-    b        = gpr_read(r2);
-    imm16    = {ir[20:16], ir[10:0]};
-    imm11    = ir[10:0];
-    imm16_sext = {{16{imm16[15]}}, imm16};
-    imm11_sext = {{21{imm11[10]}}, imm11};
-    alu_res  = 32'h0;
-    unique case (op)
-      OP_ADDI: alu_res = a + imm16_sext;
-      OP_SLL:  alu_res = a << b[4:0];
-      OP_XOR:  alu_res = a ^ b;
-      default: alu_res = 32'h0;
+    a             = gpr_read(r1_r);
+    b             = gpr_read(r2_r);
+    imm16_sext    = {{16{imm16_r[15]}}, imm16_r};
+    imm11_sext    = {{21{imm11_r[10]}}, imm11_r};
+    bj_imm11_sext = {{21{bj_imm11_r[10]}}, bj_imm11_r};
+    res           = 32'h0;
+    take_branch   = 1'b0;
+    unique case (op_r)
+      OP_ADD:  res = a + b;
+      OP_SUB:  res = a - b;
+      OP_AND:  res = a & b;
+      OP_OR:   res = a | b;
+      OP_XOR:  res = a ^ b;
+      OP_ADDI: res = a + imm16_sext;
+      OP_SUBI: res = a - imm16_sext;
+      OP_SLL, OP_SAL: res = a << b[4:0];
+      OP_SLR:  res = a >> b[4:0];
+      default: res = 32'h0;
     endcase
+    if (op_r == OP_BJ) begin
+      unique case (cond_r)
+        4'd0:  take_branch = zf;
+        4'd1:  take_branch = !zf;
+        4'd2:  take_branch = cf;
+        4'd3:  take_branch = !cf;
+        4'd4:  take_branch = sf;
+        4'd5:  take_branch = !sf;
+        4'd6:  take_branch = vf;
+        4'd7:  take_branch = !vf;
+        4'd8:  take_branch = cf && !zf;
+        4'd9:  take_branch = !cf || zf;
+        4'd10: take_branch = (sf == vf);
+        4'd11: take_branch = (sf != vf);
+        4'd12: take_branch = !zf && (sf == vf);
+        4'd13: take_branch = zf || (sf != vf);
+        4'd14: take_branch = 1'b1;
+        default: take_branch = 1'b0;
+      endcase
+    end
   end
 
   assign d_awvalid = d_awvalid_r;
@@ -156,6 +217,9 @@ module e32c_core_tn9k (
       dbg_halted      <= 1'b0;
       illegal_instr_r <= 1'b0;
       zf              <= 1'b0;
+      cf              <= 1'b0;
+      vf              <= 1'b0;
+      sf              <= 1'b0;
       if_req_valid    <= 1'b0;
       if_req_addr     <= 32'h0;
       ir              <= 32'h0;
@@ -170,12 +234,22 @@ module e32c_core_tn9k (
       d_araddr_r      <= 32'h0;
       d_wstrb_r       <= 4'hF;
       mem_reg_idx     <= 5'd0;
-      mem_mask        <= 4'h0;
+      mem_mask        <= 5'h0;
       int_enable      <= 1'b0;
       csr_wr_en       <= 1'b0;
-      csr_wr_idx      <= 2'b0;
+      csr_wr_idx      <= 5'b0;
       csr_wr_data     <= 32'h0;
-      csr_rd_idx      <= 2'b0;
+      csr_rd_idx      <= 5'b0;
+      op_r            <= 6'd0;
+      r1_r            <= 5'd0;
+      r2_r            <= 5'd0;
+      rd_r            <= 5'd0;
+      cond_r          <= 4'd0;
+      bj_raddr_r      <= 5'd0;
+      bj_imm11_r      <= 11'd0;
+      imm16_r         <= 16'd0;
+      imm11_r         <= 11'd0;
+      mask_r          <= 5'h0;
       for (i = 0; i < 32; i = i + 1) regs[i] <= 32'h0;
     end else begin
       csr_wr_en <= 1'b0;
@@ -200,51 +274,78 @@ module e32c_core_tn9k (
           end
         end
         ST_FETCH_WAIT: begin
-          if_req_valid <= !dbg_halted;
           if (if_resp_valid) begin
-            ir <= if_resp_data;
-            st <= ST_EXEC;
+            if_req_valid <= 1'b0;
+            ir           <= if_resp_data;
+            op_r         <= if_resp_data[31:26];
+            r1_r         <= if_resp_data[25:21];
+            r2_r         <= if_resp_data[20:16];
+            rd_r         <= if_resp_data[15:11];
+            cond_r       <= if_resp_data[25:22];
+            bj_raddr_r   <= if_resp_data[21:17];
+            bj_imm11_r   <= if_resp_data[16:6];
+            imm16_r      <= {if_resp_data[20:16], if_resp_data[10:0]};
+            imm11_r      <= if_resp_data[10:0];
+            mask_r       <= if_resp_data[15:11];
+            st           <= ST_EXEC;
+          end else begin
+            if_req_valid <= !dbg_halted;
           end
         end
         ST_EXEC: begin
-          if_req_valid <= 1'b0;
           illegal_instr_r <= 1'b0;
           if (ir == 32'hFFFF_FFFF) begin
             dbg_halted <= 1'b1;
             st         <= ST_FETCH_REQ;
+          end else if (ir == 32'h0) begin
+            dbg_pc <= dbg_pc + 32'd4;
+            st     <= ST_FETCH_REQ;
           end else begin
-            unique case (op)
+            unique case (op_r)
+              OP_SMUL, OP_MUL, OP_UMULL, OP_SMULL, OP_MLA,
+              OP_LDREX, OP_STREX,
+              OP_LDRPRE, OP_LDRPOST, OP_STRPRE, OP_STRPOST,
+              OP_JS, OP_JO: begin
+                illegal_instr_r <= 1'b1;
+                dbg_pc          <= dbg_pc + 32'd4;
+                st              <= ST_FETCH_REQ;
+              end
               OP_JMP: begin
-                dbg_pc <= gpr_read(br_raddr) + imm11_sext;
+                dbg_pc <= a + imm11_sext;
                 st     <= ST_FETCH_REQ;
               end
               OP_JZ: begin
-                dbg_pc <= zf ? (gpr_read(br_raddr) + imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= zf ? (a + imm11_sext) : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
               OP_JNZ: begin
-                dbg_pc <= (!zf) ? (gpr_read(br_raddr) + imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= (!zf) ? (a + imm11_sext) : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
-              OP_SUBI: begin
-                if (rd != 5'd0 && rd != 5'd31) regs[rd] <= a - imm16_sext;
-                zf <= ((a - imm16_sext) == 32'h0);
-                if (rd == 5'd31) dbg_pc <= a - imm16_sext;
-                else dbg_pc <= dbg_pc + 32'd4;
-                st <= ST_FETCH_REQ;
+              OP_JC: begin
+                dbg_pc <= cf ? (a + imm11_sext) : (dbg_pc + 32'd4);
+                st     <= ST_FETCH_REQ;
               end
-              OP_ANDS: begin
-                if (rd != 5'd0 && rd != 5'd31) regs[rd] <= a & b;
-                zf <= ((a & b) == 32'h0);
-                if (rd == 5'd31) dbg_pc <= a & b;
-                else dbg_pc <= dbg_pc + 32'd4;
-                st <= ST_FETCH_REQ;
+              OP_BJ: begin
+                dbg_pc <= take_branch ? (gpr_read(bj_raddr_r) + bj_imm11_sext) : (dbg_pc + 32'd4);
+                st     <= ST_FETCH_REQ;
               end
-              OP_ADDI, OP_SLL, OP_XOR: begin
-                if (rd != 5'd0 && rd != 5'd31) regs[rd] <= alu_res;
-                if (rd == 5'd31) dbg_pc <= alu_res;
-                else dbg_pc <= dbg_pc + 32'd4;
-                st <= ST_FETCH_REQ;
+              OP_LDR: begin
+                d_arvalid_r <= 1'b1;
+                d_araddr_r  <= a + imm11_sext;
+                d_rready_r  <= 1'b1;
+                mem_reg_idx <= r2_r;
+                mem_mask    <= mask_r[3:0];
+                st          <= ST_MEM_RD_REQ;
+              end
+              OP_STR: begin
+                d_awvalid_r <= 1'b1;
+                d_awaddr_r  <= a + imm11_sext;
+                d_wvalid_r  <= 1'b1;
+                d_wdata_r   <= b;
+                d_wstrb_r   <= mask_r[3:0];
+                d_bready_r  <= 1'b1;
+                st          <= ST_MEM_WR_REQ;
               end
               OP_EI: begin
                 int_enable <= 1'b1;
@@ -261,39 +362,62 @@ module e32c_core_tn9k (
                 if_req_addr <= saved_irq_pc;
                 st          <= ST_FETCH_REQ;
               end
+              OP_READSPR: begin
+                csr_rd_idx <= ir[15:11];
+                if (r1_r != 5'd0) regs[r1_r] <= csr_rd_data;
+                dbg_pc     <= dbg_pc + 32'd4;
+                st         <= ST_FETCH_REQ;
+              end
               OP_WRITESPR: begin
                 csr_wr_en   <= 1'b1;
-                csr_wr_idx  <= spr_idx[1:0];
+                csr_wr_idx  <= ir[15:11];
                 csr_wr_data <= a;
                 dbg_pc      <= dbg_pc + 32'd4;
                 st          <= ST_FETCH_REQ;
               end
-              OP_LDR: begin
-                d_arvalid_r <= 1'b1;
-                d_araddr_r  <= a + imm11_sext;
-                d_rready_r  <= 1'b1;
-                mem_reg_idx <= r2;
-                mem_mask    <= ir[14:11];
-                st          <= ST_MEM_RD_REQ;
+              OP_ADDS: begin
+                sum33 = {1'b0, a} + {1'b0, b};
+                if (rd_r != 5'd0) regs[rd_r] <= sum33[31:0];
+                zf <= (sum33[31:0] == 32'h0);
+                sf <= sum33[31];
+                cf <= sum33[32];
+                vf <= (~(a[31] ^ b[31]) & (a[31] ^ sum33[31]));
+                dbg_pc <= dbg_pc + 32'd4;
+                st     <= ST_FETCH_REQ;
               end
-              OP_STR: begin
-                d_awvalid_r <= 1'b1;
-                d_awaddr_r  <= a + imm11_sext;
-                d_wvalid_r  <= 1'b1;
-                d_wdata_r   <= b;
-                d_wstrb_r   <= ir[14:11];
-                d_bready_r  <= 1'b1;
-                st          <= ST_MEM_WR_REQ;
+              OP_SUBS: begin
+                if (rd_r != 5'd0) regs[rd_r] <= a - b;
+                zf <= ((a - b) == 32'h0);
+                sf <= ((a - b) >> 31);
+                cf <= (a >= b);
+                vf <= ((a[31] ^ b[31]) & (a[31] ^ ((a - b) >> 31)));
+                dbg_pc <= dbg_pc + 32'd4;
+                st     <= ST_FETCH_REQ;
+              end
+              OP_ANDS: begin
+                if (rd_r != 5'd0) regs[rd_r] <= (a & b);
+                zf <= ((a & b) == 32'h0);
+                sf <= (a[31] & b[31]);
+                cf <= 1'b0;
+                vf <= 1'b0;
+                dbg_pc <= dbg_pc + 32'd4;
+                st     <= ST_FETCH_REQ;
+              end
+              OP_ADDI, OP_SUBI: begin
+                if (rd_r != 5'd0) regs[rd_r] <= res;
+                if (op_r == OP_SUBI) zf <= (res == 32'h0);
+                dbg_pc <= dbg_pc + 32'd4;
+                st     <= ST_FETCH_REQ;
+              end
+              OP_ADD, OP_SUB, OP_AND, OP_OR, OP_XOR, OP_SLL, OP_SLR, OP_SAL: begin
+                if (rd_r != 5'd0) regs[rd_r] <= res;
+                dbg_pc <= dbg_pc + 32'd4;
+                st     <= ST_FETCH_REQ;
               end
               default: begin
-                if (ir == 32'h0) begin
-                  dbg_pc <= dbg_pc + 32'd4;
-                  st     <= ST_FETCH_REQ;
-                end else begin
-                  illegal_instr_r <= 1'b1;
-                  dbg_pc          <= dbg_pc + 32'd4;
-                  st              <= ST_FETCH_REQ;
-                end
+                illegal_instr_r <= 1'b1;
+                dbg_pc          <= dbg_pc + 32'd4;
+                st              <= ST_FETCH_REQ;
               end
             endcase
           end
@@ -307,13 +431,12 @@ module e32c_core_tn9k (
         ST_MEM_RD_WAIT: begin
           if (d_rvalid && d_rresp == 2'b00) begin
             if (mem_reg_idx != 5'd0) begin
-              unique case (mem_mask)
-                4'b0001: regs[mem_reg_idx] <= {24'h0, d_rdata[7:0]};
-                4'b0010: regs[mem_reg_idx] <= {16'h0, d_rdata[15:8], 8'h0};
-                4'b0100: regs[mem_reg_idx] <= {8'h0, d_rdata[23:16], 16'h0};
-                4'b1000: regs[mem_reg_idx] <= {d_rdata[31:24], 24'h0};
-                default: regs[mem_reg_idx] <= d_rdata;
-              endcase
+              load_val = 32'h0;
+              if (mem_mask[0]) load_val[7:0]   = d_rdata[7:0];
+              if (mem_mask[1]) load_val[15:8]  = d_rdata[15:8];
+              if (mem_mask[2]) load_val[23:16] = d_rdata[23:16];
+              if (mem_mask[3]) load_val[31:24] = d_rdata[31:24];
+              regs[mem_reg_idx] <= load_val;
             end
             d_rready_r <= 1'b0;
             dbg_pc     <= dbg_pc + 32'd4;

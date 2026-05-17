@@ -67,7 +67,19 @@ def main() -> int:
     full = bool(args.full)
 
     run([sys.executable, "scripts/gen_mmio.py"])
-    run(["git", "diff", "--exit-code", "test/src/mmio_generated.svh", "src/core/mmio_constants.py"])
+    run(
+        [
+            "git",
+            "diff",
+            "--exit-code",
+            "test/src/mmio_generated.svh",
+            "test/src/mmio_sd_regs.svh",
+            "src/core/mmio_constants.py",
+            "src/core/mmio_sd_regs.py",
+        ]
+    )
+    run([sys.executable, "scripts/gen_cores.py"])
+    run(["git", "diff", "--exit-code", "src/core/spr_constants.py", "test/src/cores_generated.svh"])
     run(["ruff", "check", "src", "tests", "examples"])
 
     pytest_cmd = [sys.executable, "-m", "pytest", "-q"]
@@ -81,6 +93,23 @@ def main() -> int:
     run(equiv_cmd)
 
     _require_iverilog()
+
+    # TN9K board image: boot copy into BSRAM, fetch via icache (no comb ROM).
+    run(
+        [
+            sys.executable,
+            "scripts/gen_firmware_hex.py",
+            "--asm",
+            "examples/blink_uart_irq_main.asm",
+            "--handler",
+            "examples/blink_uart_irq_handler.asm",
+            "--handler-addr",
+            "0x100",
+            "--words",
+            "256",
+            "--skip-fetch-rom",
+        ]
+    )
 
     rtl: list[tuple[str, str, str, bool]] = [
         ("tb_ram", "test/out_tb_ram.vvp", "test/src/tb_ram.sv test/src/ram.sv", False),
@@ -98,9 +127,21 @@ def main() -> int:
             True,
         ),
         (
+            "tb_uart_fifo",
+            "test/out_tb_uart_fifo.vvp",
+            "-f test/iverilog_soc_psram.f test/src/tb_uart_fifo.sv",
+            True,
+        ),
+        (
             "tb_psram_boot",
             "test/out_tb_psram_boot.vvp",
             "-f test/iverilog_soc_psram.f test/src/tb_psram_boot.sv",
+            True,
+        ),
+        (
+            "tb_instr_fetch_rom",
+            "test/out_tb_instr_fetch_rom.vvp",
+            "test/src/tb_instr_fetch_rom.sv test/src/instr_fetch_rom.sv",
             True,
         ),
         (
@@ -110,9 +151,22 @@ def main() -> int:
             True,
         ),
         (
+            "tb_tn9k_bram_boot",
+            "test/out_tb_tn9k_bram_boot.vvp",
+            "-f test/iverilog_soc_psram.f test/src/tb_tn9k_bram_boot.sv "
+            "test/src/core_tn9k.sv test/src/axi4lite_ram_dual.sv test/src/ram.sv",
+            True,
+        ),
+        (
             "tb_core_irq",
             "test/out_tb_core_irq.vvp",
             "-f test/iverilog_soc_psram.f test/src/tb_core_irq.sv",
+            True,
+        ),
+        (
+            "tb_core_tn9k_smoke",
+            "test/out_tb_core_tn9k_smoke.vvp",
+            "-I test/src test/src/tb_core_tn9k_smoke.sv test/src/core_tn9k.sv test/src/csr_spr.sv",
             True,
         ),
         (
@@ -130,7 +184,7 @@ def main() -> int:
         (
             "tb_irq_flow",
             "test/out_tb_irq_flow.vvp",
-            "test/src/tb_irq_flow.sv test/src/csr_irq.sv",
+            "test/src/tb_irq_flow.sv test/src/csr_spr.sv",
             full,
         ),
         (
@@ -151,6 +205,18 @@ def main() -> int:
             "-f test/iverilog_soc_psram.f test/src/tb_sd_spi_protocol.sv",
             True,
         ),
+        (
+            "tb_sd_block",
+            "test/out_tb_sd_block.vvp",
+            "-f test/iverilog_soc_psram.f test/src/tb_sd_block.sv",
+            True,
+        ),
+        (
+            "tb_sd_backend_smoke",
+            "test/out_tb_sd_backend_smoke.vvp",
+            "-f test/iverilog_soc_psram.f test/src/tb_sd_backend_smoke.sv",
+            True,
+        ),
     ]
 
     for name, out_vvp, srcs, psram_cwd in rtl:
@@ -161,13 +227,40 @@ def main() -> int:
             "tb_timer_gpio",
         }:
             continue
-        iverilog_cmd = ["iverilog", "-g2012", "-o", out_vvp]
+        if name == "tb_boot_smoke":
+            run(
+                [
+                    sys.executable,
+                    "scripts/gen_firmware_hex.py",
+                    "--asm",
+                    "examples/boot_smoke.asm",
+                    "--words",
+                    "256",
+                    "--skip-fetch-rom",
+                ]
+            )
+        if name == "tb_tn9k_bram_boot":
+            run(
+                [
+                    sys.executable,
+                    "scripts/gen_firmware_hex.py",
+                    "--asm",
+                    "examples/blink_uart_irq_main.asm",
+                    "--handler",
+                    "examples/blink_uart_irq_handler.asm",
+                    "--handler-addr",
+                    "0x100",
+                    "--words",
+                    "256",
+                    "--skip-fetch-rom",
+                ]
+            )
+        iverilog_cmd = ["iverilog", "-g2012", "-D", "E32C_SIM_ICARUS", "-I", str(ROOT / "test" / "src"), "-o", out_vvp]
         if srcs.startswith("-f"):
             iverilog_cmd.extend(srcs.split())
         else:
             iverilog_cmd.extend(srcs.split())
         run(iverilog_cmd)
-        vvp_path = out_vvp
         pass_marker = f"{name} PASS"
         if psram_cwd:
             run_vvp_expect(pass_marker, f"../{Path(out_vvp).name}", cwd=ROOT / "test" / "src")
@@ -179,9 +272,13 @@ def main() -> int:
         cosim_cmd.append("--full")
     run(cosim_cmd)
 
+    # Restore TN9K FPGA default image (blink) after boot_smoke overwrites firmware_b*.hex.
+    run([sys.executable, "scripts/build_tn9k_firmware.py", "--profile", "blink"])
+
     print("\nverify_all: PASS")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -27,6 +27,8 @@ def test_uart_tx_buffer() -> None:
     bus.write_word(base + 0, 0x41)
     bus.write_word(base + 0, 0x42)
     assert bytes(bus.uart.tx_buffer) == b"AB"
+    bus.uart.tick()
+    bus.uart.tick()
     assert bus.read_word(base + 8) & 0x2  # TX idle
 
 
@@ -42,6 +44,7 @@ def test_uart_tx_feeds_rx_loopback_hook() -> None:
     bus.uart.set_on_tx_byte(hook)
     base = MMIO_BASE_DEFAULT + 0x1000
     bus.write_word(base + 0, 0x55)
+    bus.uart.tick()
     bus.uart.feed_rx(bytes(captured))
     assert bus.read_word(base + 4) & 0xFF == 0x55
 

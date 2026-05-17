@@ -1,3 +1,5 @@
+`include "cores_generated.svh"
+
 module e32c_core (
   input logic        clk,
   input logic        rst_n,
@@ -112,9 +114,10 @@ module e32c_core (
   logic [63:0] mul_s_prod;
 
   logic csr_wr_en;
-  logic [1:0] csr_wr_idx;
+  logic [4:0] csr_wr_idx;
   logic [31:0] csr_wr_data;
-  logic [1:0] csr_rd_idx;
+  logic [4:0] csr_rd_idx;
+  logic [4:0] csr_rd_idx_eff;
   logic [31:0] csr_rd_data;
   logic irq_pending;
   logic irq_ack_r;
@@ -193,12 +196,18 @@ module e32c_core (
   e32c_mul_s_dsp u_mul_s(.a(a), .b(b), .p(mul_s_prod));
 
   assign irq_ack_r = irq_pending && (st == ST_FETCH_REQ) && !if_stall && !dbg_halted;
+  assign csr_rd_idx_eff =
+      (st == ST_EXEC && op == OP_READSPR) ? ir[15:11] : csr_rd_idx;
 
-  csr_irq u_csr_irq (
+  csr_spr #(
+    .CORE_INFO_VAL(E32C_CORE_INFO_FULL),
+    .ISA_REVISION_VAL(E32C_ISA_REVISION),
+    .FEATURES_VAL(E32C_FEATURES_FULL)
+  ) u_csr_spr (
     .clk(clk), .rst_n(rst_n), .cur_pc(dbg_pc), .irq_lines(irq_lines),
     .int_enable(int_enable), .iret_exec(iret_exec), .irq_ack(irq_ack_r),
     .wr_en(csr_wr_en), .wr_idx(csr_wr_idx), .wr_data(csr_wr_data),
-    .rd_idx(csr_rd_idx), .rd_data(csr_rd_data), .irq_pending(irq_pending),
+    .rd_idx(csr_rd_idx_eff), .rd_data(csr_rd_data), .irq_pending(irq_pending),
     .irq_vector(irq_vector), .saved_irq_pc(saved_irq_pc)
   );
 
@@ -236,9 +245,9 @@ module e32c_core (
       exclusive_addr <= 32'h0;
       exclusive_valid <= 1'b0;
       csr_wr_en <= 1'b0;
-      csr_wr_idx <= 2'b0;
+      csr_wr_idx <= 5'b0;
       csr_wr_data <= 32'h0;
-      csr_rd_idx <= 2'b0;
+      csr_rd_idx <= 5'b0;
       for (i = 0; i < 32; i = i + 1) regs[i] <= 32'h0;
     end else begin
       csr_wr_en <= 1'b0;
@@ -475,14 +484,14 @@ module e32c_core (
                 st <= ST_FETCH_REQ;
               end
               OP_READSPR: begin
-                csr_rd_idx <= ir[12:11];
+                csr_rd_idx <= ir[15:11];
                 if (r1 != 5'd0) regs[r1] <= csr_rd_data;
                 dbg_pc <= dbg_pc + 32'd4;
                 st <= ST_FETCH_REQ;
               end
               OP_WRITESPR: begin
                 csr_wr_en <= 1'b1;
-                csr_wr_idx <= ir[12:11];
+                csr_wr_idx <= ir[15:11];
                 csr_wr_data <= a;
                 dbg_pc <= dbg_pc + 32'd4;
                 st <= ST_FETCH_REQ;
