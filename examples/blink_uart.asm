@@ -1,0 +1,31 @@
+# Blink + UART ~1 Hz @ 27 MHz. Delay = 1350 x 20000 iterations per BL\n.
+
+MOV 21 -1
+MOV 22 16
+SLL 21 22 21
+ADDI 21 23 4096
+
+MOV 10 66
+MOV 11 76
+MOV 19 10
+MOV 15 40
+MOV 14 60
+MOV 13 56
+
+# loop @ 40:
+STR 23 10 1 0
+STR 23 11 1 0
+STR 23 19 1 0
+ADDI 0 25 1350
+
+# delay_outer @ 56:
+ADDI 0 16 20000
+
+# delay_inner @ 60:
+SUBI 16 16 1
+JNZ 14 0
+
+SUBI 25 25 1
+JNZ 13 0
+
+JMP 15 0

@@ -1,0 +1,26 @@
+# Single source of truth for MMIO bases (Python simulator + RTL).
+# After edits, run: python scripts/gen_mmio.py
+
+mmio_base: 0xFFFF0000
+window_size: 0x4000
+
+# Devices on the APB fabric (4 KiB decode slots: compare paddr[31:12] with base[31:12]).
+# python_region_bytes: aperture size used by the functional SystemBus (may differ from RTL register map).
+devices:
+  gpio:
+    offset: 0x0000
+    python_region_bytes: 4
+    rtl_apb: true
+  uart:
+    offset: 0x1000
+    python_region_bytes: 0x10
+    rtl_apb: true
+  timer:
+    offset: 0x2000
+    python_region_bytes: 0x20
+    rtl_apb: true
+  sd_spi:
+    offset: 0x3000
+    python_region_bytes: 0x210
+    rtl_apb: true
+    # RTL: SPI register block (apb_sd_spi). Python: block device with sector buffer (same base offset).

@@ -1,0 +1,21 @@
+# IRQ handler @ 0x100 — timer ACK + BL\n (matches WRITESPR vector in main).
+
+DI
+MOV 21 -1
+MOV 22 16
+SLL 21 22 21
+ADDI 21 22 4096
+ADDI 21 24 8192
+
+ADDI 0 20 5
+STR 24 20 15 16
+
+MOV 10 66
+STR 22 10 1 0
+MOV 11 76
+STR 22 11 1 0
+MOV 19 10
+STR 22 19 1 0
+
+EI
+IRET

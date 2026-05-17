@@ -1,0 +1,98 @@
+// Tang Nano 9K: fetch in instr_fetch_rom (byte BRAM + firmware_b*.hex), dual 8 KiB data BRAM.
+// IF_ROM_USE_BRAM needs lane hex in Gowin project; comb fetch_rom_nop is the safe fallback.
+module soc_top_tn9k (
+  input logic        clk,
+  input logic        rst_n,
+  input logic        ext_awvalid,
+  output logic        ext_awready,
+  input logic [31:0] ext_awaddr,
+  input logic        ext_wvalid,
+  output logic        ext_wready,
+  input logic [31:0] ext_wdata,
+  input logic [3:0]  ext_wstrb,
+  output logic        ext_bvalid,
+  input logic        ext_bready,
+  output logic [1:0]  ext_bresp,
+  input logic        ext_arvalid,
+  output logic        ext_arready,
+  input logic [31:0] ext_araddr,
+  output logic        ext_rvalid,
+  input logic        ext_rready,
+  output logic [31:0] ext_rdata,
+  output logic [1:0]  ext_rresp,
+  output logic        uart_tx,
+  input logic        uart_rx,
+  output logic        sd_spi_sck,
+  output logic        sd_spi_mosi,
+  input logic        sd_spi_miso,
+  output logic        sd_spi_cs_n,
+  output logic        soc_activity,
+  output logic        illegal_instr,
+  output logic [31:0] gpio_out_obs,
+  output logic [31:0] core_pc_obs,
+  output logic        core_halted_obs,
+  output logic        if_req_obs,
+  output logic        if_resp_obs,
+  output logic        if_stall_obs
+);
+  // GW1NR-9: 26 BSRAM max. ~8 blocks per 4K-word bank, ~16 per 8K — dual 8K+8K = 32 (RP0002).
+  localparam integer TN9K_DATA_BANK0_WORDS = 8192;  // 32 KiB @ 0x0000_0000 (~16 BSRAM)
+  localparam integer TN9K_DATA_BANK1_WORDS = 4096;  // 16 KiB @ 0x0000_8000 (~8 BSRAM)
+  localparam integer TN9K_IF_ROM_WORDS = 512;
+  // 1: byte-lane BRAM ROM (add firmware_b0..b3.hex to Gowin). 0: comb fetch_rom_nop (proven on board).
+  localparam bit TN9K_IF_ROM_BRAM = 1'b0;
+
+  soc_top #(
+    .RAM_WORDS(TN9K_DATA_BANK0_WORDS),
+    .PSRAM_WORDS(TN9K_DATA_BANK0_WORDS),
+    .RAM_BANK1_WORDS(TN9K_DATA_BANK1_WORDS),
+    .USE_DUAL_RAM(1'b1),
+    .IF_ROM_WORDS(TN9K_IF_ROM_WORDS),
+    .IF_ROM_USE_BRAM(TN9K_IF_ROM_BRAM),
+    .ENABLE_CORE(1),
+    .USE_LITE_CORE(0),
+    .USE_TN9K_CORE(1'b1),
+    .FORCE_IF_NOP_FETCH(1'b1),
+    .ENABLE_UART(1),
+    .ENABLE_TIMER(1),
+    .ENABLE_GPIO(1),
+    .ENABLE_SD_SPI(0),
+    .ENABLE_FW_BOOTLOAD(1'b0),
+    .USE_FPGA_RAM(1'b1),
+    .USE_READMEMH(1'b0)
+  ) u_soc (
+    .clk(clk),
+    .rst_n(rst_n),
+    .ext_awvalid(ext_awvalid),
+    .ext_awready(ext_awready),
+    .ext_awaddr(ext_awaddr),
+    .ext_wvalid(ext_wvalid),
+    .ext_wready(ext_wready),
+    .ext_wdata(ext_wdata),
+    .ext_wstrb(ext_wstrb),
+    .ext_bvalid(ext_bvalid),
+    .ext_bready(ext_bready),
+    .ext_bresp(ext_bresp),
+    .ext_arvalid(ext_arvalid),
+    .ext_arready(ext_arready),
+    .ext_araddr(ext_araddr),
+    .ext_rvalid(ext_rvalid),
+    .ext_rready(ext_rready),
+    .ext_rdata(ext_rdata),
+    .ext_rresp(ext_rresp),
+    .uart_tx(uart_tx),
+    .uart_rx(uart_rx),
+    .sd_spi_sck(sd_spi_sck),
+    .sd_spi_mosi(sd_spi_mosi),
+    .sd_spi_miso(sd_spi_miso),
+    .sd_spi_cs_n(sd_spi_cs_n),
+    .soc_activity(soc_activity),
+    .illegal_instr(illegal_instr),
+    .gpio_out_obs(gpio_out_obs),
+    .core_pc_obs(core_pc_obs),
+    .core_halted_obs(core_halted_obs),
+    .if_req_obs(if_req_obs),
+    .if_resp_obs(if_resp_obs),
+    .if_stall_obs(if_stall_obs)
+  );
+endmodule

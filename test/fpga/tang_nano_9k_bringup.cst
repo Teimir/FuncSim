@@ -1,0 +1,19 @@
+// Tang Nano 9K — minimal bring-up (fpga_bringup_tn9k). Enable "Use DONE as regular IO" in IDE.
+IO_LOC "clk27" 52;
+IO_PORT "clk27" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+
+IO_LOC "uart_tx" 17;
+IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+
+IO_LOC "user_led[0]" 10;
+IO_PORT "user_led[0]" PULL_MODE=UP DRIVE=8;
+IO_LOC "user_led[1]" 11;
+IO_PORT "user_led[1]" PULL_MODE=UP DRIVE=8;
+IO_LOC "user_led[2]" 13;
+IO_PORT "user_led[2]" PULL_MODE=UP DRIVE=8;
+IO_LOC "user_led[3]" 14;
+IO_PORT "user_led[3]" PULL_MODE=UP DRIVE=8;
+IO_LOC "user_led[4]" 15;
+IO_PORT "user_led[4]" PULL_MODE=UP DRIVE=8;
+IO_LOC "user_led[5]" 16;
+IO_PORT "user_led[5]" PULL_MODE=UP DRIVE=8;

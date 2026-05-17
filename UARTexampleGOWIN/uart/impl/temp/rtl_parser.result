@@ -1,0 +1,28 @@
+[
+ {
+  "InstFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_top.v",
+  "InstLine" : 1,
+  "InstName" : "uart_test",
+  "ModuleFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_top.v",
+  "ModuleLine" : 1,
+  "ModuleName" : "uart_test",
+  "SubInsts" : [
+   {
+    "InstFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_top.v",
+    "InstLine" : 116,
+    "InstName" : "uart_rx_inst",
+    "ModuleFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_rx.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "uart_rx"
+   },
+   {
+    "InstFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_top.v",
+    "InstLine" : 130,
+    "InstName" : "uart_tx_inst",
+    "ModuleFile" : "C:/Users/darkness/Downloads/TangNano-9K-example-main/TangNano-9K-example-main/uart/src/uart_tx.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "uart_tx"
+   }
+  ]
+ }
+]

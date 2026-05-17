@@ -1,0 +1,40 @@
+programs:
+  - name: addi_halt
+    asm: |
+      ADDI 0 1 5
+      HALT
+    checks:
+      - {reg: 1, val: 5}
+
+  - name: adds_flags
+    asm: |
+      ADDS 1 2 3
+      HALT
+    setup:
+      regs: {1: 0, 2: 0}
+    checks:
+      - {reg: 3, val: 0}
+
+  - name: mul_umull
+    asm: |
+      UMULL 1 2 3 4
+      HALT
+    setup:
+      regs: {1: 2, 2: 3}
+    checks:
+      - {reg: 3, val: 6}
+      - {reg: 4, val: 0}
+
+  - name: bj_beq
+    asm: |
+      ADDI 0 1 1
+      ADDI 0 2 1
+      CMP 1 2
+      BEQ 31 12
+      ADDI 0 1 99
+      HALT
+      ADDI 0 1 7
+      HALT
+    checks:
+      - {reg: 1, val: 7}
+
