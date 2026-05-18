@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 
-from core.asm.expr import eval_expr
 from core.asm.errors import AssembleError
+from core.asm.expr import eval_expr
 
 _REG_RE = re.compile(r"^[rR](\d+)$")
 _LABEL_DEF_RE = re.compile(r"^([A-Za-z_.][A-Za-z0-9_.]*)\s*:\s*(.*)$")

@@ -7,7 +7,7 @@ Track as GitHub issues when prioritised.
 | Epic | Estimate | Start when | Status |
 |------|----------|------------|--------|
 | GDB remote stub for E32C | 2–3 weeks | External users need GDB without Tk GUI | **Done (MVP)** — `cli.gdb_server`, [gdb/README.md](gdb/README.md) |
-| ELF loader / linker integration | 2–4 weeks | GCC or LLVM target for E32C exists | **In progress** — spec in roadmap; code pending agent mode |
+| ELF loader / linker integration | 2–4 weeks | GCC or LLVM target for E32C exists | **Done (MVP)** — Python toolchain: `e32c-ld`, `core.elf`, [toolchain.md](toolchain.md) |
 | Cycle-accurate timing vs `core.sv` | 3+ weeks | Microarch contract is frozen | Open (`test/` only) |
 | `execute.py` dispatch table refactor | 3–5 days | ISA grows past ~55 opcodes | Open |
 | Python SD SPI protocol model | 2–4 weeks | Block MMIO insufficient for driver debug | **Done** — `SdSpiMmio`, `--sd-spi` |

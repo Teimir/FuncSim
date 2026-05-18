@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from core.asm import LinkSpec, assemble_text, link_programs
-
 from tests.asm.conftest import ROOT
 
 

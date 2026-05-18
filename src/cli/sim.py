@@ -6,14 +6,14 @@ import argparse
 import sys
 from pathlib import Path
 
+from cli.debug_common import add_core_argument, cpu_state_from_args
 from core.asm import AssembleError, assemble_text
 from core.bus import MMIO_BASE_DEFAULT, SystemBus
 from core.exceptions import BreakpointHit
-from core.loader import load_binary, load_words, words_from_hex_lines
+from core.loader import load_binary, load_elf, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.peripherals.uart import Uart
 from core.runner import Runner
-from cli.debug_common import add_core_argument, cpu_state_from_args
 from core.trace import StepTrace
 
 
@@ -24,6 +24,7 @@ def main() -> None:
     p.add_argument("--bin", type=Path, help="Raw binary file (little-endian words as bytes)")
     p.add_argument("--hex", type=Path, help="Text file: one 32-bit hex word per line")
     p.add_argument("--asm", type=Path, help="Assembler source (one instruction per line)")
+    p.add_argument("--elf", type=Path, help="ELF32 E32C image (EM_E32C)")
     p.add_argument("--max-steps", type=int, default=100_000)
     p.add_argument("--until-halt", action="store_true", help="Run until HALT (still bounded by --max-steps)")
     p.add_argument("--cycles-report", action="store_true", help="Print total cycle count after run")
@@ -63,6 +64,7 @@ def main() -> None:
         mem = ram
 
     st = cpu_state_from_args(args)
+    entry_pc = args.load_addr
     if args.bin:
         load_binary(mem, args.load_addr, args.bin)
     elif args.hex:
@@ -75,10 +77,13 @@ def main() -> None:
             print(f"assemble error: {e}", file=sys.stderr)
             sys.exit(1)
         load_words(mem, args.load_addr, ws)
+    elif args.elf:
+        load_addr, entry_pc = load_elf(mem, args.elf, base=args.load_addr)
+        args.load_addr = load_addr
     else:
-        p.error("provide --bin, --hex, or --asm")
+        p.error("provide --bin, --hex, --asm, or --elf")
 
-    st.set_pc(args.load_addr)
+    st.set_pc(entry_pc)
     brk = set(args.break_addrs) if args.break_addrs else set()
     trace_f = args.trace_file.open("w", encoding="utf-8") if args.trace_file else None
 

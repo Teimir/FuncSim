@@ -6,8 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from core.asm import AssembleError, assemble_file, assemble_text
-
+from core.asm import assemble_file
 from tests.asm.conftest import ROOT
 
 

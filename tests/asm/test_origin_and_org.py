@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
 from core.asm import assemble_file, assemble_text
-
 from tests.asm.conftest import ROOT
 
 

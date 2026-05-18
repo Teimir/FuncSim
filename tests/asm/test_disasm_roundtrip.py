@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import re
-
 import pytest
 import yaml
 
 from core.asm import assemble_line
-from core.decode import decode_word
 from core.disasm import disassemble_word
 from core.isa_paths import find_opcodes_yaml
 
