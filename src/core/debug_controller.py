@@ -23,6 +23,8 @@ from core.exceptions import (
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.runner import Runner
+from core.mmio_timer_regs import TimerRegs
+from core.mmio_uart_regs import UartRegs
 from core.spr_constants import SPR_CORE_INFO, SPR_FEATURES, SPR_ISA_REVISION, VARIANT_CORE_INFO
 from core.state import SPR_IRQ_MASK, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC, CPUState
 from core.trace import StepTrace
@@ -137,7 +139,7 @@ def _mmio_snapshot(bus: SystemBus) -> MmioSnapshot:
     base = bus.mmio_base
     uart = bus.uart
     hx, asc = _uart_tx_preview(uart)
-    st = uart.read_reg(uart.UART_STATUS)
+    st = uart.read_reg(UartRegs.REG_STATUS)
     t = bus.timer
     sd_info = bus.sd.snapshot_info()
     if sd_info.get("mode") == "spi":
@@ -167,11 +169,11 @@ def _mmio_snapshot(bus: SystemBus) -> MmioSnapshot:
         uart_tx_ascii=asc,
         uart_status=st,
         uart_rx_queue_len=uart.rx_queued,
-        timer_counter_lo=t.read_reg(0),
-        timer_counter_hi=t.read_reg(4),
-        timer_compare_lo=t.read_reg(8),
-        timer_compare_hi=t.read_reg(12),
-        timer_ctrl=t.read_reg(16),
+        timer_counter_lo=t.read_reg(TimerRegs.REG_COUNTER),
+        timer_counter_hi=t.read_reg(TimerRegs.REG_COUNTER_HI_PAD),
+        timer_compare_lo=t.read_reg(TimerRegs.REG_PERIOD_LO),
+        timer_compare_hi=t.read_reg(TimerRegs.REG_PERIOD_HI),
+        timer_ctrl=t.read_reg(TimerRegs.REG_CTRL),
         sd=sd_snap,
     )
 
