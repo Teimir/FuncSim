@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import struct
 import time
 from pathlib import Path
 
-from core.asm import assemble_text
+from core.asm import LinkSpec, assemble_text, link_programs
+from core.elf import parse_elf32
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -181,7 +183,8 @@ def write_rom_svh(path: Path, words: list[int]) -> None:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--asm", type=Path, default=ROOT / "examples" / "blink_uart.asm")
+    p.add_argument("--asm", type=Path, default=None, help="Assembler source")
+    p.add_argument("--elf", type=Path, default=None, help="ELF32 image (e_machine E32C)")
     p.add_argument("--words", type=int, default=1024, help="Pad image length (data / hex banks)")
     p.add_argument(
         "--if-rom-words",
@@ -209,8 +212,43 @@ def main() -> int:
     )
     args = p.parse_args()
 
-    source = args.asm.read_text(encoding="utf-8")
-    words = assemble_text(source)
+    if args.elf is not None:
+        image = parse_elf32(args.elf)
+        blob = b""
+        base = 0
+        for seg in sorted(image.segments, key=lambda s: s.vaddr):
+            if seg.vaddr == 0 or not blob:
+                base = seg.vaddr
+                blob = seg.data
+            elif seg.vaddr == base + len(blob):
+                blob += seg.data
+            else:
+                raise SystemExit(f"non-contiguous ELF segments at 0x{seg.vaddr:x}")
+        words = [
+            struct.unpack_from("<I", blob, i)[0] & 0xFFFFFFFF for i in range(0, len(blob), 4)
+        ]
+        src_label = args.elf
+    elif args.asm is not None:
+        src_label = args.asm
+        if args.handler is not None:
+            words = link_programs(
+                [
+                    LinkSpec(args.asm, origin=0),
+                    LinkSpec(args.handler, origin=args.handler_addr),
+                ],
+                image_size=args.words,
+                fill=0,
+            )
+        else:
+            words = assemble_text(args.asm.read_text(encoding="utf-8"))
+            if len(words) < args.words:
+                words.extend([0] * (args.words - len(words)))
+    else:
+        args.asm = ROOT / "examples" / "blink_uart.asm"
+        src_label = args.asm
+        words = assemble_text(args.asm.read_text(encoding="utf-8"))
+        if len(words) < args.words:
+            words.extend([0] * (args.words - len(words)))
     patch_idle_jmp_loop(words)
 
     vector = _find_irq_vector_from_words(words)
@@ -218,21 +256,6 @@ def main() -> int:
         raise SystemExit(
             f"IRQ vector in asm (0x{vector:x}) != --handler-addr (0x{args.handler_addr:x})"
         )
-
-    if args.handler is not None:
-        handler_words = assemble_text(args.handler.read_text(encoding="utf-8"))
-        idx = args.handler_addr // 4
-        if len(words) > idx:
-            raise SystemExit(
-                f"main ({len(words)} words) overlaps handler @ 0x{args.handler_addr:x}"
-            )
-        while len(words) < idx:
-            words.append(0)
-        words.extend(handler_words)
-
-    nop = 0x0000_0000
-    while len(words) < args.words:
-        words.append(nop)
 
     out = args.out_dir
     write_bank(out / "firmware_b0.hex", words, 0)
@@ -249,7 +272,7 @@ def main() -> int:
         write_bank(out / "firmware_store_b2.hex", words, 2)
         write_bank(out / "firmware_store_b3.hex", words, 3)
 
-    print(f"Wrote {len(words)} words from {args.asm}")
+    print(f"Wrote {len(words)} words from {src_label}")
     print(f"  handler @ 0x{args.handler_addr:x}, vector 0x{vector or _EXPECTED_VECTOR:x}")
     extras = "firmware_b0..b3.hex, firmware_rom.svh"
     if not args.skip_fetch_rom:

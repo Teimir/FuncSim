@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
+from core.asm.encode import COND_ALIAS
 from core.decode import decode_word
 from core.exceptions import IllegalInstruction
 from core.instruction import Instruction
 
 _COND_NAMES = ("EQ", "NE", "CS", "CC", "MI", "PL", "VS", "VC", "HI", "LS", "GE", "LT", "GT", "LE", "AL", "NV")
+_CANON_COND = (
+    "BEQ",
+    "BNE",
+    "BCC",
+    "BMI",
+    "BPL",
+    "BVS",
+    "BVC",
+    "BHI",
+    "BLS",
+    "BGE",
+    "BLT",
+    "BGT",
+    "BLE",
+    "BAL",
+)
+_COND_BY_CODE = {COND_ALIAS[n]: n[1:] for n in _CANON_COND if n in COND_ALIAS}
 
 
 def _imm11_signed(v: int) -> int:
@@ -55,8 +73,11 @@ def format_instruction(ins: Instruction) -> str:
     if f == "branch_cond":
         imm = _imm11_signed(int(fld["imm11"]))
         c = int(fld["cond"])
-        cname = _COND_NAMES[c] if 0 <= c < len(_COND_NAMES) else "NV"
-        return f"B{cname} r{fld['raddr']} {imm}"
+        cname = _COND_BY_CODE.get(c, _COND_NAMES[c] if 0 <= c < len(_COND_NAMES) else "NV")
+        raddr = int(fld["raddr"])
+        if raddr == 31:
+            return f"B{cname} {imm}"
+        return f"B{cname} r{raddr} {imm}"
 
     if f == "load_store":
         imm = _imm11_signed(int(fld["imm11"]))
@@ -69,6 +90,10 @@ def format_instruction(ins: Instruction) -> str:
     if f == "spr":
         op = "READSPR" if m == "READSPR" else "WRITESPR"
         return f"{op} r{fld['r1']} {fld['spr']}"
+
+    if f == "strex":
+        imm = _imm11_signed(int(fld["imm11"]))
+        return f"{m} r{fld['raddr']} r{fld['rsrc']} r{fld['rstatus']} {imm}"
 
     return f"{m} <{f}>"
 

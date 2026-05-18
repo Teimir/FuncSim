@@ -41,6 +41,7 @@ ignore = ["E501"]
 "examples/**" = ["E402", "I001"]
 
 [project.scripts]
+e32c-asm = "cli.asm:main"
 e32c-debug-gui = "cli.debug_gui.app:main"
 e32c-gdb-server = "cli.gdb_server:main"
 
@@ -49,7 +50,12 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["tests"]
+testpaths = ["tests", "test/tn9k/python"]
 markers = [
   "slow: property-based and long integration tests (run with verify_all --full)",
+  "tn9k: Tang Nano 9K isolated suite under test/tn9k/",
+  "hw: requires programmed board and --port (see test/tn9k/hw/)",
+  "toolchain: requires E32C_TOOLCHAIN (LLVM) in PATH",
+  "toolchain_build: requires built LLVM backend",
+  "toolchain_e2e: end-to-end sim/GDB/hex tests",
 ]

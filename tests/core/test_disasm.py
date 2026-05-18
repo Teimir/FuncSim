@@ -86,6 +86,15 @@ def test_disassemble_word_roundtrip_known() -> None:
     assert disassemble_word(0) == "NOP"
 
 
+def test_format_strex() -> None:
+    from core.asm import assemble_line
+
+    w = assemble_line("STREX 1 2 3 0")
+    ins = decode_word(w)
+    assert ins.mnemonic == "STREX"
+    assert format_instruction(ins) == "STREX r1 r2 r3 0"
+
+
 def test_decode_illegal_raises() -> None:
     try:
         decode_word(0x00000001)

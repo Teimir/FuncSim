@@ -43,3 +43,27 @@ def test_undefined_label_raises() -> None:
         raise AssertionError("expected AssembleError")
     except AssembleError:
         pass
+
+
+def test_jmp_label() -> None:
+    words = assemble_text(
+        """
+        JMP skip
+        NOP
+    skip:
+        HALT
+        """
+    )
+    assert len(words) == 3
+
+
+def test_branch_rn_syntax() -> None:
+    words = assemble_text(
+        """
+        BEQ r31 end
+        ADDI r0 r1 1
+    end:
+        HALT
+        """
+    )
+    assert len(words) == 3
