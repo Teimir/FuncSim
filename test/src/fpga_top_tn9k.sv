@@ -1,13 +1,18 @@
 module fpga_top_tn9k #(
-  // 1: UART test stream (no SoC). 0: normal SoC + firmware (after bring-up OK).
+  // 0: поток UART без SoC (отладка). 1: SoC + прошивка.
   parameter USE_HW_UART_STREAM = 1'b0,
-  // 0: MMIO shim on SPI pins (~fits 8640 LUT). 1: Gowin SDIO_SPI_Top (overflow on TN9K).
-  parameter bit SD_BACKEND = 1'b0
+  // 0 = hello baseline (UART-only, ~6.8k LUT). 1 = demo (UART+Timer+SD shim, ~8.2k LUT).
+  parameter bit TN9K_PROFILE_DEMO = 1'b0,
+  // 0: MMIO shim на SPI-пинах (~8640 LUT). 1: Gowin SDIO_SPI_Top (не помещается на TN9K).
+  parameter bit SD_BACKEND = 1'b0,
+  // На TN9K обязательно 0 (буфер сектора ~3k LUT).
+  parameter bit SD_USE_CARD_MEM = 1'b0
 ) (
   input  logic       clk27,
-  input  logic       user_btn_n, // optional; extend reset if wired
+  // Пин в CST (IO 3); сброс только POR — кнопка не участвует (на части плат не подключена).
+  (* syn_keep = 1 *) input logic user_btn_n,
   output logic       uart_tx,
-  input  logic       uart_rx, // unused; tied high inside when SoC off
+  input  logic       uart_rx, // не используется в режиме UART bring-up
   output logic [5:0] user_led,
   output logic       sd_spi_sck,
   output logic       sd_spi_mosi,
@@ -26,21 +31,31 @@ module fpga_top_tn9k #(
   logic        in_handler;
   logic        in_handler_d;
   logic        led4_tgl;
+  logic        user_btn_sense;
+
+  assign user_btn_sense = user_btn_n;
 
   always_ff @(posedge clk27) begin
     if (!rst_n_por)
       rst_cnt <= rst_cnt + 16'd1;
   end
 
-  // POR only; do not gate on user_btn_n (pin 3 may be unwired / wrong on some boards).
   assign rst_n_por = &rst_cnt;
   assign rst_n     = rst_n_por;
+
+  localparam bit ENABLE_SD_SPI = TN9K_PROFILE_DEMO;
+  localparam bit ENABLE_TIMER  = TN9K_PROFILE_DEMO;
+  localparam bit ENABLE_GPIO   = 1'b0;
 
   generate
     if (!USE_HW_UART_STREAM) begin : g_soc
       soc_top_tn9k #(
         .SD_MMIO_MODE(1'b1),
-        .SD_BACKEND(SD_BACKEND)
+        .SD_BACKEND(SD_BACKEND),
+        .SD_USE_CARD_MEM(SD_USE_CARD_MEM),
+        .ENABLE_SD_SPI(ENABLE_SD_SPI),
+        .ENABLE_TIMER(ENABLE_TIMER),
+        .ENABLE_GPIO(ENABLE_GPIO)
       ) u_soc (
         .clk(clk27),
         .rst_n(rst_n),
@@ -62,7 +77,7 @@ module fpga_top_tn9k #(
         .ext_rdata(),
         .ext_rresp(),
         .uart_tx(soc_uart_tx),
-        .uart_rx(1'b1),
+        .uart_rx(uart_rx | 1'b1),
         .sd_spi_sck(sd_spi_sck),
         .sd_spi_mosi(sd_spi_mosi),
         .sd_spi_miso(sd_spi_miso),
@@ -78,8 +93,7 @@ module fpga_top_tn9k #(
       );
       assign uart_tx = soc_uart_tx;
     end else begin : g_uart_bringup
-      // 27 MHz: CLK_PER_BIT 281 ≈ 9600, 234 ≈ 115200. Try both in terminal.
-      // Pattern 'H' (0x48). Only 0x0A on screen ⇒ wrong COM port or terminal UI.
+      // 27 МГц: CLK_PER_BIT 281 ≈ 9600, 234 ≈ 115200.
       uart_stream_test #(
         .CLK_PER_BIT(16'd281),
         .PATTERN(8'h48)
@@ -102,7 +116,6 @@ module fpga_top_tn9k #(
   assign in_handler =
     (core_pc_obs >= 32'h200) & (core_pc_obs < 32'h280) & ~core_halted_obs;
 
-  // Handler runs only ~µs per IRQ; holding PC in 0x100.. is invisible. Toggle on each entry (~0.5 Hz).
   always_ff @(posedge clk27) begin
     in_handler_d <= in_handler;
     if (!rst_n_por)
@@ -113,11 +126,10 @@ module fpga_top_tn9k #(
 
   always_ff @(posedge clk27) begin
     hb <= hb + 24'd1;
-    // Active-low LEDs: 0 = on.
+    // LED активны по нулю.
     if (!rst_n_por) begin
       user_led <= 6'b111111;
     end else if (USE_HW_UART_STREAM) begin
-      // Bring-up: LED0 slow blink, LED1 fast blink (distinct from SoC bitstream).
       user_led[0] <= ~hb[23];
       user_led[1] <= ~hb[20];
       user_led[5:2] <= 4'b1111;
@@ -126,8 +138,7 @@ module fpga_top_tn9k #(
       user_led[1] <= ~gpio_out_obs[0];
       user_led[2] <= ~core_halted_obs;
       user_led[3] <= ~illegal_instr_obs;
-      user_led[4] <= led4_tgl;
-      user_led[5] <= 1'b1;
+      user_led[5:4] <= ~core_pc_obs[5:4];
     end
   end
 endmodule

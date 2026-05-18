@@ -1,9 +1,8 @@
+// Файл ram.sv; модуль axi4lite_ram — AXI4-Lite RAM на BSRAM (байтовые банки).
 module axi4lite_ram #(
   parameter integer MEM_WORDS = 1024,
   parameter [31:0] BASE_ADDR = 32'h0000_0000,
-  parameter bit ENABLE_FW_BOOTLOAD = 1'b0,
-  // 1: $readmemh into BSRAM (FPGA). 0: copy firmware_rom.svh after reset (sim).
-  parameter bit BOOT_INIT_MEMH = 1'b0
+  parameter bit ENABLE_FW_BOOTLOAD = 1'b0
 ) (
   input  logic        clk,
   input  logic        rst_n,
@@ -48,7 +47,9 @@ module axi4lite_ram #(
   logic fw_done;
   logic boot_copy;
   logic [$clog2(MEM_WORDS)-1:0] fw_idx;
-  logic [31:0] fw_rom_wdata;
+  logic rom_boot_wr;
+  logic [$clog2(MEM_WORDS)-1:0] rom_boot_addr;
+  logic [31:0] rom_boot_wdata;
 
   assign fw_ready = fw_done;
   assign wr_fire = s_awvalid && s_wvalid && !s_bvalid;
@@ -62,48 +63,31 @@ module axi4lite_ram #(
   assign rd_aligned = (s_araddr[1:0] == 2'b00);
   assign wr_in_range = (wr_off[31:2] < MEM_WORDS);
   assign rd_in_range = (rd_off[31:2] < MEM_WORDS);
-  assign boot_copy = ENABLE_FW_BOOTLOAD && !BOOT_INIT_MEMH && !fw_done;
+  // После сброса — копия firmware_rom.svh (на TN9K/Gowin пути $readmemh ненадёжны).
+  assign boot_copy = ENABLE_FW_BOOTLOAD && !fw_done;
 
   generate
-    if (ENABLE_FW_BOOTLOAD && BOOT_INIT_MEMH) begin : g_boot_init
-      initial begin
-        // test.gprj (cwd test/ or test/impl/gwsynthesis): try both layouts.
-        $readmemh("src/firmware_b0.hex", mem_b0);
-        $readmemh("src/firmware_b1.hex", mem_b1);
-        $readmemh("src/firmware_b2.hex", mem_b2);
-        $readmemh("src/firmware_b3.hex", mem_b3);
-        $readmemh("../../src/firmware_b0.hex", mem_b0);
-        $readmemh("../../src/firmware_b1.hex", mem_b1);
-        $readmemh("../../src/firmware_b2.hex", mem_b2);
-        $readmemh("../../src/firmware_b3.hex", mem_b3);
-      end
-      always_ff @(posedge clk) begin
-        if (!rst_n)
-          fw_done <= 1'b0;
-        else
-          fw_done <= 1'b1;
-      end
-    end else if (ENABLE_FW_BOOTLOAD) begin : g_boot_runtime
+    if (ENABLE_FW_BOOTLOAD) begin : g_boot_runtime
       `include "firmware_rom.svh"
-      assign fw_rom_wdata = fw_rom_word(fw_idx);
+      assign rom_boot_wdata = fw_rom_word(fw_idx);
+      assign rom_boot_wr    = boot_copy && (fw_idx < FW_WORDS);
+      assign rom_boot_addr  = fw_idx[$clog2(MEM_WORDS)-1:0];
 
       always_ff @(posedge clk) begin
         if (!rst_n) begin
-          fw_idx <= '0;
-          fw_done <= 1'b0;
+          fw_idx   <= '0;
+          fw_done  <= 1'b0;
         end else if (boot_copy) begin
-          if (fw_idx < FW_WORDS) begin
-            mem_b0[fw_idx] <= fw_rom_wdata[7:0];
-            mem_b1[fw_idx] <= fw_rom_wdata[15:8];
-            mem_b2[fw_idx] <= fw_rom_wdata[23:16];
-            mem_b3[fw_idx] <= fw_rom_wdata[31:24];
+          if (fw_idx < FW_WORDS)
             fw_idx <= fw_idx + 1'b1;
-          end else begin
+          else
             fw_done <= 1'b1;
-          end
         end
       end
     end else begin : g_no_boot
+      assign rom_boot_wr    = 1'b0;
+      assign rom_boot_addr  = '0;
+      assign rom_boot_wdata = 32'h0;
       always_ff @(posedge clk) begin
         if (!rst_n)
           fw_done <= 1'b1;
@@ -111,9 +95,14 @@ module axi4lite_ram #(
     end
   endgenerate
 
-  // Single write process for BSRAM inference (no second always_ff on mem_*).
+  // Один порт записи — иначе Gowin не выводит BSRAM (два always_ff → взрыв LUT/DFF).
   always_ff @(posedge clk) begin
-    if (wr_fire && fw_done) begin
+    if (rom_boot_wr) begin
+      mem_b0[rom_boot_addr] <= rom_boot_wdata[7:0];
+      mem_b1[rom_boot_addr] <= rom_boot_wdata[15:8];
+      mem_b2[rom_boot_addr] <= rom_boot_wdata[23:16];
+      mem_b3[rom_boot_addr] <= rom_boot_wdata[31:24];
+    end else if (wr_fire && fw_done) begin
       if (wr_aligned && wr_in_range) begin
         if (s_wstrb[0]) mem_b0[wr_off[31:2]] <= s_wdata[7:0];
         if (s_wstrb[1]) mem_b1[wr_off[31:2]] <= s_wdata[15:8];

@@ -13,7 +13,7 @@
 | **MMIO** | `0xFFFF_0000` | APB |
 
 - **Инструкции:** `icache` читает из той же RAM, что и LDR/STR.
-- **Boot:** образ из `firmware_b*.hex` → bank0 (`BOOT_INIT_MEMH=1` для Gowin).
+- **Boot (TN9K):** `BOOT_INIT_MEMH=0` — копия из **`firmware_rom.svh`** (после `build_tn9k_firmware.py`), без `$readmemh`. В `ram.sv` один порт записи в BSRAM (иначе RP0006). Вариант `$readmemh` (`BOOT_INIT_MEMH=1`) только если cwd проекта = `test/` и есть `src/firmware_b*.hex`.
 - **Flash на плате** — только для битстрима (как всегда), не для программы.
 
 Внешняя HyperRAM **не используется** (нет конфликта с MSPI/SSPI).
@@ -30,13 +30,22 @@ python scripts/build_tn9k_firmware.py
 python scripts/build_tn9k_firmware.py --profile demo
 ```
 
-Профили: `--profile blink` (по умолчанию, `BL` ~1 Hz), `hello` (сразу `Hi!`), `irq`, `smoke`, `sd_spi` (CMD0 + `OK`), `demo` (UART+Timer+SD → `USGR` + `T`…).
+Профили: `--profile blink` (по умолчанию, `BL` ~1 Hz), `hello` (сразу `Hi!`), `irq`, `smoke`, `sd_spi` (CMD0 + `OK`), `demo` (UART+Timer+SD → `USGRT` + `T`…).
+
+### Два bitstream-профиля (top `fpga_top_tn9k`)
+
+| Профиль | Прошивка | Параметр Gowin | LUT (ориентир) |
+|---------|----------|----------------|----------------|
+| **hello** (baseline) | `build_tn9k_firmware.py --profile hello` | `TN9K_PROFILE_DEMO = 0` | ~6.8k |
+| **demo** | `--profile demo` | `TN9K_PROFILE_DEMO = 1` | ~8.2k |
+
+Зафиксированный hello: [test/tn9k/baseline/README.md](../tn9k/baseline/README.md). Demo: [test/tn9k/DEMO.md](../tn9k/DEMO.md).
 
 **Важно:** для сборки подойдут **`test/test.gprj`** или **`test/fpga/tn9k_soc.gprj`**. Перед синтезом: `python scripts/build_tn9k_firmware.py`. Без свежих `src/firmware_b*.hex` RAM пустая → UART молчит.
 
 Терминал: **115200 8N1**, **8-bit** (не UTF-16), TX пин **17** (см. `tang_nano_9k.cst`).
 
-**UART молчит:** `soc_top_tn9k` грузит прошивку из **`firmware_rom.svh`** (`BOOT_INIT_MEMH=0`). После `build_tn9k_firmware.py` обязательно **пересинтезируйте** bitstream — иначе в RAM старый/пустой образ. Для проверки линии UART: в `fpga_top_tn9k` временно `USE_HW_UART_STREAM=1` → на терминале поток `0x55`.
+**UART молчит:** после `build_tn9k_firmware.py` сделайте **Clean → Synthesize** (нужны свежие `firmware_b*.hex` в `test/src/`). **RP0006 / LUT&gt;8640:** проверьте `SD_USE_CARD_MEM=0`, `BOOT_INIT_MEMH=1`, в отчёте синтеза **BSRAM≈20**, не десятки тысяч DFF на `mem_b*`. UART bring-up: `USE_HW_UART_STREAM=1` → поток `0x55`.
 
 Если видите только `B` или `<0>L<0>` вместо `BL`: пересоберите прошивку (`build_tn9k_firmware.py`), в Gowin **Clean → Synthesize**. При мусоре в UART попробуйте в `soc_top_tn9k` параметр `UART_CLK_MHZ = 28` или `29`.
 

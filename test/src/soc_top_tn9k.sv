@@ -1,11 +1,15 @@
-// Tang Nano 9K: icache + dual BSRAM. Boot via firmware_rom.svh (reliable in Gowin; $readmemh paths often fail).
+// Tang Nano 9K: icache + два BSRAM. Загрузка firmware_rom.svh; один порт записи в ram.sv.
 module soc_top_tn9k #(
-  // Match real crystal/osc MHz if serial is garbled (try 28–30 on some boards).
+  // Частота кварца (МГц); при мусоре в UART попробовать 28–30.
   parameter int UART_CLK_MHZ = 27,
   parameter bit SD_MMIO_MODE = 1'b1,
   parameter bit SD_BACKEND = 1'b0,
-  // Sector buffer (512x32) does not map to BSRAM on GW1NR; infers 16k DFF (limit 6693).
-  parameter bit SD_USE_CARD_MEM = 1'b0
+  // Буфер сектора 512×32 не влезает в BSRAM GW1NR → ~16k DFF (RP0006 при лимите 8640 LUT).
+  parameter bit SD_USE_CARD_MEM = 1'b0,
+  // 0: UART-only (~6.8k LUT). 1: +MMIO SD shim (~+1.8k LUT, риск RP0006).
+  parameter bit ENABLE_SD_SPI = 1'b0,
+  parameter bit ENABLE_TIMER = 1'b0,
+  parameter bit ENABLE_GPIO = 1'b0
 ) (
   input logic        clk,
   input logic        rst_n,
@@ -44,6 +48,7 @@ module soc_top_tn9k #(
   localparam integer TN9K_DATA_BANK0_WORDS = 8192;
   localparam integer TN9K_DATA_BANK1_WORDS = 2048;
 
+  // Gowin EX3434: к inout в soc_top только net (wire), не logic.
   wire IO_sdio_cmd;
   wire IO_sdio_dat0;
   wire IO_sdio_dat1_irq;
@@ -61,14 +66,13 @@ module soc_top_tn9k #(
     .USE_TN9K_CORE(1'b1),
     .FORCE_IF_NOP_FETCH(1'b0),
     .ENABLE_UART(1),
-    .ENABLE_TIMER(1),
-    .ENABLE_GPIO(1),
-    .ENABLE_SD_SPI(1),
+    .ENABLE_TIMER(ENABLE_TIMER),
+    .ENABLE_GPIO(ENABLE_GPIO),
+    .ENABLE_SD_SPI(ENABLE_SD_SPI),
     .SD_MMIO_MODE(SD_MMIO_MODE),
     .SD_BACKEND(SD_BACKEND),
     .SD_USE_CARD_MEM(SD_USE_CARD_MEM),
     .ENABLE_FW_BOOTLOAD(1'b1),
-    .BOOT_INIT_MEMH(1'b0),
     .USE_FPGA_RAM(1'b1),
     .USE_READMEMH(1'b0)
   ) u_soc (

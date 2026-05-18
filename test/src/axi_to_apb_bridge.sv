@@ -80,7 +80,7 @@ module axi_to_apb_bridge (
           penable <= 1'b0;
           pwrite  <= 1'b0;
 
-          // Core may assert AW+W in the same cycle for STR.
+          // Ядро может выставить AW+W в один такт (STR).
           if (s_awvalid && s_awready && s_wvalid && s_wready && !write_collecting) begin
             is_write <= 1'b1;
             pwrite   <= 1'b1;
@@ -122,7 +122,7 @@ module axi_to_apb_bridge (
         ST_ACCESS: begin
           psel    <= 1'b1;
           penable <= 1'b1;
-          // First ACCESS cycle still sees penable==0 at the slave; complete when it was already 1.
+          // Первый такт ACCESS: у slave penable ещё 0; завершение, если penable уже был 1.
           if (pready && penable) begin
             psel    <= 1'b0;
             penable <= 1'b0;
@@ -144,5 +144,5 @@ module axi_to_apb_bridge (
     end
   end
 
-  // s_wstrb unused: all MMIO peripherals accept full 32-bit writes today.
+  // s_wstrb не используется: все MMIO принимают полные 32-бит записи.
 endmodule

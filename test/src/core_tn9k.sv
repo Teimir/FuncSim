@@ -1,4 +1,4 @@
-// E32C core for Tang Nano 9K: TN9K ISA subset, 2-stage fetch (27 MHz target).
+// Ядро E32C для Tang Nano 9K: подмножество ISA TN9K, выборка за 2 такта (цель 27 МГц).
 `include "cores_generated.svh"
 
 module e32c_core_tn9k (
@@ -33,7 +33,12 @@ module e32c_core_tn9k (
   output logic [31:0] dbg_r1,
   output logic [31:0] dbg_r2,
   output logic [31:0] dbg_r3,
-  output logic [31:0] dbg_r4
+  output logic [31:0] dbg_r4,
+  output logic [31:0] dbg_r11,
+  output logic [31:0] dbg_r12,
+  output logic [31:0] dbg_r13,
+  output logic [31:0] dbg_r14,
+  output logic [31:0] dbg_r15
 );
   localparam [5:0] OP_LDR      = 6'd1;
   localparam [5:0] OP_STR      = 6'd2;
@@ -83,7 +88,8 @@ module e32c_core_tn9k (
   localparam [2:0] ST_MEM_WR_WAIT = 3'd6;
 
   logic [2:0]  st;
-  logic [31:0] regs[0:31];
+  // keep: регистровый файл не схлопывается в LUT (Gowin); r0/r31 — особые случаи в always_ff.
+  (* keep = "true" *) logic [31:0] regs[0:31];
   logic [31:0] ir;
   logic        int_enable;
   logic        zf, cf, vf, sf;
@@ -115,8 +121,9 @@ module e32c_core_tn9k (
 
   logic [31:0] a, b;
   logic [31:0] imm16_sext, imm11_sext, bj_imm11_sext;
+  // Assembler: imm = target - PC_at_branch_insn. R31 must be that PC, not PC+4 after fetch/NOP.
+  wire [31:0] branch_target_r1 = (r1_r == 5'd31) ? (dbg_pc + imm11_sext) : (a + imm11_sext);
   logic [31:0] res;
-  logic [31:0] exec_rhs;
   logic [31:0] load_val;
   logic [32:0] sum33;
   logic        take_branch;
@@ -209,6 +216,11 @@ module e32c_core_tn9k (
   assign dbg_r2    = regs[2];
   assign dbg_r3    = regs[3];
   assign dbg_r4    = regs[4];
+  assign dbg_r11   = regs[11];
+  assign dbg_r12   = regs[12];
+  assign dbg_r13   = regs[13];
+  assign dbg_r14   = regs[14];
+  assign dbg_r15   = regs[15];
   assign illegal_instr = illegal_instr_r;
 
   always_ff @(posedge clk) begin
@@ -257,7 +269,7 @@ module e32c_core_tn9k (
       regs[31]  <= dbg_pc;
       case (st)
         ST_FETCH_REQ: begin
-          if_req_valid <= !dbg_halted;
+          if_req_valid <= 1'b0;
           d_awvalid_r  <= 1'b0;
           d_wvalid_r   <= 1'b0;
           d_bready_r   <= 1'b0;
@@ -290,6 +302,7 @@ module e32c_core_tn9k (
             st           <= ST_EXEC;
           end else begin
             if_req_valid <= !dbg_halted;
+            if_req_addr    <= dbg_pc;
           end
         end
         ST_EXEC: begin
@@ -311,23 +324,25 @@ module e32c_core_tn9k (
                 st              <= ST_FETCH_REQ;
               end
               OP_JMP: begin
-                dbg_pc <= a + imm11_sext;
+                dbg_pc <= branch_target_r1;
                 st     <= ST_FETCH_REQ;
               end
               OP_JZ: begin
-                dbg_pc <= zf ? (a + imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= zf ? branch_target_r1 : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
               OP_JNZ: begin
-                dbg_pc <= (!zf) ? (a + imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= (!zf) ? branch_target_r1 : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
               OP_JC: begin
-                dbg_pc <= cf ? (a + imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= cf ? branch_target_r1 : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
               OP_BJ: begin
-                dbg_pc <= take_branch ? (gpr_read(bj_raddr_r) + bj_imm11_sext) : (dbg_pc + 32'd4);
+                dbg_pc <= take_branch
+                  ? ((bj_raddr_r == 5'd31) ? (dbg_pc + bj_imm11_sext) : (gpr_read(bj_raddr_r) + bj_imm11_sext))
+                  : (dbg_pc + 32'd4);
                 st     <= ST_FETCH_REQ;
               end
               OP_LDR: begin
@@ -342,7 +357,8 @@ module e32c_core_tn9k (
                 d_awvalid_r <= 1'b1;
                 d_awaddr_r  <= a + imm11_sext;
                 d_wvalid_r  <= 1'b1;
-                d_wdata_r   <= b;
+                // Зафиксировать данные в ST_EXEC (Gowin: comb read regs[] при позднем STR).
+                d_wdata_r   <= gpr_read(r2_r);
                 d_wstrb_r   <= mask_r[3:0];
                 d_bready_r  <= 1'b1;
                 st          <= ST_MEM_WR_REQ;
@@ -429,18 +445,22 @@ module e32c_core_tn9k (
           end
         end
         ST_MEM_RD_WAIT: begin
-          if (d_rvalid && d_rresp == 2'b00) begin
-            if (mem_reg_idx != 5'd0) begin
-              load_val = 32'h0;
-              if (mem_mask[0]) load_val[7:0]   = d_rdata[7:0];
-              if (mem_mask[1]) load_val[15:8]  = d_rdata[15:8];
-              if (mem_mask[2]) load_val[23:16] = d_rdata[23:16];
-              if (mem_mask[3]) load_val[31:24] = d_rdata[31:24];
-              regs[mem_reg_idx] <= load_val;
-            end
+          if (d_rvalid) begin
             d_rready_r <= 1'b0;
             dbg_pc     <= dbg_pc + 32'd4;
             st         <= ST_FETCH_REQ;
+            if (d_rresp == 2'b00) begin
+              if (mem_reg_idx != 5'd0) begin
+                load_val = 32'h0;
+                if (mem_mask[0]) load_val[7:0]   = d_rdata[7:0];
+                if (mem_mask[1]) load_val[15:8]  = d_rdata[15:8];
+                if (mem_mask[2]) load_val[23:16] = d_rdata[23:16];
+                if (mem_mask[3]) load_val[31:24] = d_rdata[31:24];
+                regs[mem_reg_idx] <= load_val;
+              end
+            end else begin
+              // SLVERR/DECERR: завершить транзакцию, чтобы конвейер не завис.
+            end
           end
         end
         ST_MEM_WR_REQ: begin

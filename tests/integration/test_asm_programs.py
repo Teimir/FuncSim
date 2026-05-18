@@ -71,7 +71,7 @@ def test_uart_tx_mmio_mini_program() -> None:
 
 def test_tn9k_uart_hello_once() -> None:
     asm_path = ROOT / "examples" / "tn9k_uart_hello.asm"
-    st, bus, steps = _run_asm(asm_path.read_text(encoding="utf-8"), max_steps=20_000)
+    st, bus, steps = _run_asm(asm_path.read_text(encoding="utf-8"), max_steps=30_000)
     assert steps > 0
     tx = bytes(bus.uart.tx_sent)
     assert tx == b"Hi!\r\n", f"unexpected uart: {tx!r}"

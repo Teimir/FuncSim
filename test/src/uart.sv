@@ -1,5 +1,5 @@
-// APB wrapper around Gowin uart_tx / uart_rx (UARTexampleGOWIN), 8N1.
-// TX/RX FIFO depth 8; STATUS: RX_READY, TX_IDLE, TX_FULL, RX_FULL.
+// Обёртка APB вокруг Gowin uart_tx/uart_rx (UARTexampleGOWIN), 8N1.
+// Глубина FIFO TX/RX = 8; STATUS: RX_READY, TX_IDLE, TX_FULL, RX_FULL.
 module apb_uart #(
   parameter int CLK_FRE_MHZ = 27,
   parameter int BAUD_RATE   = 115200,
@@ -55,7 +55,7 @@ module apb_uart #(
   wire rx_fifo_empty = (rx_count == 0);
 
   wire tx_serializer_idle = tx_ready && !tx_valid;
-  // TX idle when FIFO drained and serializer not holding a byte (do not require tx_ready).
+  // TX idle: FIFO пуст и сериализатор не держит байт.
   wire tx_idle = tx_fifo_empty && !tx_valid;
   wire rx_ready_stat = !rx_fifo_empty;
 
@@ -113,7 +113,7 @@ module apb_uart #(
       irq_en_rx <= 1'b0;
       irq_en_tx <= 1'b0;
     end else begin
-      // TX: pop FIFO into serializer
+      // TX: из FIFO в сериализатор
       if (tx_serializer_idle && !tx_fifo_empty) begin
         tx_byte  <= tx_fifo[tx_rptr];
         tx_valid <= 1'b1;
@@ -129,14 +129,14 @@ module apb_uart #(
         tx_count         <= tx_count + 1'b1;
       end
 
-      // RX: push from line receiver
+      // RX: приём с линии
       if (rx_valid) begin
         rx_fifo[rx_wptr] <= rx_byte;
         rx_wptr          <= rx_ptr_inc(rx_wptr);
         rx_count         <= rx_count + 1'b1;
       end
 
-      // RX: pop on CPU read
+      // RX: чтение CPU
       if (reg_read && reg_off == E32C_UART_OFF_RXDATA && !rx_fifo_empty) begin
         rx_rptr  <= rx_ptr_inc(rx_rptr);
         rx_count <= rx_count - 1'b1;

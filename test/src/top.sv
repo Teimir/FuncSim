@@ -15,12 +15,12 @@ module soc_top #(
   parameter ENABLE_SD_SPI = 0,
   parameter bit SD_MMIO_MODE = 1'b1,
   parameter bit SD_BACKEND = 1'b0,
-  parameter bit SD_USE_CARD_MEM = 1'b1,
+  // TN9K: буфер сектора 512×32 выключен (~3k+ LUT/DFF; RP0006 при 8640 LUT).
+  parameter bit SD_USE_CARD_MEM = 1'b0,
   parameter ENABLE_FW_BOOTLOAD = 1'b0,
-  parameter BOOT_INIT_MEMH = 1'b0,
-  // Tang Nano 9K: simple BRAM (no PSRAM boot ROM) saves ~2k LUT.
+  // Tang Nano 9K: простой BRAM без PSRAM boot ROM — экономия ~2k LUT.
   parameter USE_FPGA_RAM = 1'b0,
-  // Simulation may preload hex; FPGA relies on firmware_rom.svh boot copy only.
+  // Симуляция: preload hex; FPGA — только копия firmware_rom.svh.
   parameter USE_READMEMH = 1'b1,
   parameter integer PSRAM_READ_LATENCY = 3,
   parameter int UART_CLK_MHZ = 27,
@@ -148,7 +148,7 @@ module soc_top #(
           .clk(clk),
           .rst_n(rst_n),
           .req_valid(core_if_req_valid),
-          .req_addr(core_if_req_addr),
+          .req_addr(core_dbg_pc),
           .stall(icache_stall_w),
           .resp_valid(core_if_resp_valid),
           .resp_data(core_if_resp_data),
@@ -221,7 +221,12 @@ module soc_top #(
         .dbg_r1(),
         .dbg_r2(),
         .dbg_r3(),
-        .dbg_r4()
+        .dbg_r4(),
+        .dbg_r11(),
+        .dbg_r12(),
+        .dbg_r13(),
+        .dbg_r14(),
+        .dbg_r15()
       );
 
       if (FORCE_IF_NOP_FETCH == 0) begin : g_if_icache_tn9k
@@ -230,7 +235,7 @@ module soc_top #(
           .clk(clk),
           .rst_n(rst_n),
           .req_valid(core_if_req_valid),
-          .req_addr(core_if_req_addr),
+          .req_addr(core_dbg_pc),
           .stall(icache_stall_w),
           .resp_valid(core_if_resp_valid),
           .resp_data(core_if_resp_data),
@@ -369,25 +374,34 @@ module soc_top #(
   logic m_arvalid;
   logic [31:0] m_araddr;
   logic m_rready;
-  logic ar_was_core;
-  always_ff @(posedge clk) begin
-    if (!rst_n)
-      ar_was_core <= 1'b0;
-    else if (!use_ext && m_arvalid && m_arready)
-      ar_was_core <= core_d_arvalid;
-  end
+  logic core_d_rd_pending;
 
   assign use_ext = ext_lock || ext_awvalid || ext_wvalid || ext_arvalid;
+
+  // Учёт data read ядра до handshake R (APB/MMIO и mux с icache в один такт).
+  always_ff @(posedge clk) begin
+    if (!rst_n)
+      core_d_rd_pending <= 1'b0;
+    else if (use_ext)
+      core_d_rd_pending <= 1'b0;
+    else if (core_d_arvalid && core_d_arready)
+      core_d_rd_pending <= 1'b1;
+    else if (core_d_rd_pending && m_rvalid && core_d_rready)
+      core_d_rd_pending <= 1'b0;
+  end
+
+  wire core_owns_rresp = (!use_ext) && core_d_rd_pending;
+
   assign m_awvalid = use_ext ? ext_awvalid : core_d_awvalid;
   assign m_awaddr = use_ext ? ext_awaddr : core_d_awaddr;
   assign m_wvalid = use_ext ? ext_wvalid : core_d_wvalid;
   assign m_wdata = use_ext ? ext_wdata : core_d_wdata;
   assign m_wstrb = use_ext ? ext_wstrb : core_d_wstrb;
   assign m_bready = use_ext ? ext_bready : core_d_bready;
-  // Core data reads share AR with icache; multicycle CPU usually has one outstanding read — core has priority when both assert.
+  // AR общий с icache; при одновременном запросе приоритет у data read ядра.
   assign m_arvalid = use_ext ? ext_arvalid : (core_d_arvalid ? 1'b1 : ic_arvalid);
   assign m_araddr = use_ext ? ext_araddr : (core_d_arvalid ? core_d_araddr : ic_araddr);
-  assign m_rready = use_ext ? ext_rready : (ar_was_core ? core_d_rready : ic_rready);
+  assign m_rready = use_ext ? ext_rready : (core_owns_rresp ? core_d_rready : ic_rready);
   assign soc_activity = core_if_req_valid ^ core_if_resp_valid ^ m_arvalid ^ m_rvalid ^ core_d_awvalid ^ core_d_wvalid;
   assign illegal_instr = core_illegal_instr;
   assign gpio_out_obs = gpio_out;
@@ -420,11 +434,11 @@ module soc_top #(
   assign core_d_bvalid  = (!use_ext) ? m_bvalid : 1'b0;
   assign core_d_bresp   = (!use_ext) ? m_bresp : 2'b00;
   assign core_d_arready = (!use_ext) && m_arready && core_d_arvalid;
-  assign core_d_rvalid  = (!use_ext) && m_rvalid && ar_was_core;
+  assign core_d_rvalid  = (!use_ext) && m_rvalid && core_owns_rresp;
   assign core_d_rdata   = m_rdata;
   assign core_d_rresp   = m_rresp;
   assign ic_arready = (!use_ext) && m_arready && !core_d_arvalid && ic_arvalid;
-  assign ic_rvalid = (!use_ext) && m_rvalid && !ar_was_core;
+  assign ic_rvalid = (!use_ext) && m_rvalid && !core_owns_rresp;
   assign ic_rdata = m_rdata;
   assign ic_rresp = (!use_ext) ? m_rresp : 2'b10;
 
@@ -461,8 +475,7 @@ module soc_top #(
           .BANK0_WORDS(MEM_WORDS_P),
           .BANK1_WORDS(RAM_BANK1_WORDS),
           .BASE_ADDR(32'h0000_0000),
-          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD),
-          .BOOT_INIT_MEMH(BOOT_INIT_MEMH)
+          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD)
         ) u_ram_dual (
           .clk(clk),
           .rst_n(rst_n),
@@ -489,8 +502,7 @@ module soc_top #(
         axi4lite_ram #(
           .MEM_WORDS(MEM_WORDS_P),
           .BASE_ADDR(32'h0000_0000),
-          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD),
-          .BOOT_INIT_MEMH(BOOT_INIT_MEMH)
+          .ENABLE_FW_BOOTLOAD(ENABLE_FW_BOOTLOAD)
         ) u_ram (
           .clk(clk),
           .rst_n(rst_n),
