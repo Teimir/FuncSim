@@ -17,6 +17,7 @@ from cli.debug_gui.theme import apply_density_to_app, apply_ttk_theme, configure
 from cli.debug_gui.tooltips import bind_status_tip
 from core.debug_controller import DebugController
 from core.memory import Memory
+from core.spr_constants import VARIANT_CORE_INFO
 
 
 class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
@@ -42,6 +43,7 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         self._var_list_radius = tk.StringVar(value=str(ctrl.listing_radius))
         self._var_fast_refresh = tk.BooleanVar(value=False)
         self._var_status_mode = tk.StringVar(value="minimal")
+        self._var_core = tk.StringVar(value=ctrl.state.core_variant)
         self._perf_last_ts = time.perf_counter()
         self._perf_last_instr = 0
         self._perf_last_cycles = 0
@@ -126,6 +128,16 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         vm.add_separator()
         vm.add_radiobutton(label="Status: minimal", variable=self._var_status_mode, value="minimal", command=self.refresh)
         vm.add_radiobutton(label="Status: full", variable=self._var_status_mode, value="full", command=self.refresh)
+        vm.add_separator()
+        cm = tk.Menu(vm, tearoff=0)
+        vm.add_cascade(label="Core variant", menu=cm)
+        for name in sorted(VARIANT_CORE_INFO.keys()):
+            cm.add_radiobutton(
+                label=name,
+                variable=self._var_core,
+                value=name,
+                command=self._on_core_apply,
+            )
         hm = tk.Menu(m, tearoff=0)
         m.add_cascade(label="Help", menu=hm)
         hm.add_command(
@@ -134,7 +146,8 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
                 "Shortcuts",
                 "F7 — Step\nF6 — Run N\nF8 — Continue (max steps field)\n"
                 "Ctrl+R — Reset CPU\nCtrl+U — UART terminal\nCtrl+A — Toggle Auto\n"
-                "Ctrl+O — Open hex\nCtrl+B — Open binary\n\n"
+                "Ctrl+O — Open hex\nCtrl+B — Open binary\n"
+                "Toolbar / View → Core — switch full/tn9k/lite (resets CPU)\n\n"
                 "Registers / memory: double-click to edit (RAM words only).\n"
                 "Listing: right-click toggles breakpoint.",
                 parent=self,
@@ -166,6 +179,22 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         b_reset = ttk.Button(bar, text="Reset (Ctrl+R)", command=self._on_reset)
         b_reset.pack(side=tk.LEFT, padx=2)
         bind_status_tip(b_reset, "Reset CPU state; breakpoints preserved (Ctrl+R).", self)
+        ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
+        ttk.Label(bar, text="Core:").pack(side=tk.LEFT)
+        cb_core = ttk.Combobox(
+            bar,
+            textvariable=self._var_core,
+            values=sorted(VARIANT_CORE_INFO.keys()),
+            state="readonly",
+            width=7,
+        )
+        cb_core.pack(side=tk.LEFT, padx=2)
+        cb_core.bind("<<ComboboxSelected>>", self._on_core_apply)
+        bind_status_tip(
+            cb_core,
+            "Switch ISA profile (full / tn9k / lite). Resets CPU; keeps breakpoints.",
+            self,
+        )
         ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
         cb_auto = ttk.Checkbutton(bar, text="Auto", variable=self._var_auto, command=self._toggle_auto)
         cb_auto.pack(side=tk.LEFT, padx=2)

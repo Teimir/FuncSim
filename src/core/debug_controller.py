@@ -23,7 +23,7 @@ from core.exceptions import (
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.runner import Runner
-from core.spr_constants import SPR_CORE_INFO, SPR_FEATURES, SPR_ISA_REVISION
+from core.spr_constants import SPR_CORE_INFO, SPR_FEATURES, SPR_ISA_REVISION, VARIANT_CORE_INFO
 from core.state import SPR_IRQ_MASK, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC, CPUState
 from core.trace import StepTrace
 
@@ -256,6 +256,17 @@ class DebugController:
         load_words(self.mem, addr, ws)
         self.load_addr = addr
 
+    def set_core_variant(self, name: str, *, preserve_breakpoints: bool = True) -> None:
+        if name not in VARIANT_CORE_INFO:
+            raise ValueError(f"unknown core variant {name!r}")
+        if name == self.state.core_variant:
+            return
+        self.state.core_variant = name
+        self.state.exclusive_valid = False
+        self.state.exclusive_addr = None
+        self.state.irq_in_service = False
+        self.reset_cpu(preserve_breakpoints=preserve_breakpoints)
+
     def reset_cpu(self, *, preserve_breakpoints: bool = True) -> None:
         breaks = set(self.runner.break_pcs) if preserve_breakpoints else set()
         variant = self.state.core_variant
@@ -264,6 +275,9 @@ class DebugController:
         self.state.halted = False
         self.state.spr = {}
         self.state.core_variant = variant
+        self.state.exclusive_valid = False
+        self.state.exclusive_addr = None
+        self.state.irq_in_service = False
         self.state.set_pc(self.load_addr)
         self.runner.cycle_counter.reset()
         self.instruction_count = 0

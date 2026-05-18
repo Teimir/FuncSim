@@ -77,3 +77,13 @@ def test_debug_controller_honors_core_variant() -> None:
     ctrl = create_debug_controller(ram, _args(core="tn9k"))
     assert ctrl.state.core_variant == "tn9k"
     assert ctrl.state.spr_read(SPR_CORE_INFO) == CORE_INFO_TN9K
+
+
+def test_set_core_variant_at_runtime() -> None:
+    ram = Memory()
+    ctrl = create_debug_controller(ram, _args(core="full"))
+    load_words(ram, 0, assemble_text(MUL_ASM))
+    ctrl.set_core_variant("tn9k")
+    assert ctrl.state.core_variant == "tn9k"
+    assert ctrl.state.spr_read(SPR_CORE_INFO) == CORE_INFO_TN9K
+    assert ctrl.state.pc == 0

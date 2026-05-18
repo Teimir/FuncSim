@@ -383,6 +383,36 @@ class ActionsMixin:
         except tk.TclError:
             pass
 
+    def _sync_core_ui(self) -> None:
+        v = self._ctrl.state.core_variant
+        self.title(f"E32C debugger — core {v}")
+        self._var_core.set(v)
+
+    def _on_core_apply(self, *_args: object) -> None:
+        if self._run_thread_active:
+            self._sync_core_ui()
+            self._pending_status = "Wait for background run to finish before changing core"
+            self.refresh()
+            return
+        new = self._var_core.get().strip()
+        if new == self._ctrl.state.core_variant:
+            return
+        self._stop_auto()
+        try:
+            self._ctrl.set_core_variant(new, preserve_breakpoints=True)
+        except ValueError as e:
+            self._sync_core_ui()
+            messagebox.showerror("Core variant", str(e), parent=self)
+            return
+        self._perf_last_ts = time.perf_counter()
+        self._perf_last_instr = 0
+        self._perf_last_cycles = 0
+        self._perf_active_dt = 0.0
+        self._perf_active_instr = 0
+        self._sync_core_ui()
+        self._pending_status = f"Core → {new} (CPU reset, breakpoints kept)"
+        self.refresh()
+
     def _on_reset(self) -> None:
         if self._run_thread_active:
             self._pending_status = "Wait for background run to finish before reset"
