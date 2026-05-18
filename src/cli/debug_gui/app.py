@@ -163,34 +163,43 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         )
 
     def _build_toolbar(self) -> None:
-        bar = ttk.Frame(self)
-        bar.pack(fill=tk.X, padx=4, pady=2)
-        b_step = ttk.Button(bar, text="Step (F7)", command=self._on_step)
+        outer = ttk.Frame(self)
+        outer.pack(fill=tk.X, padx=4, pady=2)
+        row_run = ttk.Frame(outer)
+        row_run.pack(fill=tk.X)
+        row_extra = ttk.Frame(outer)
+        row_extra.pack(fill=tk.X, pady=(2, 0))
+
+        b_step = ttk.Button(row_run, text="Step", command=self._on_step)
         b_step.pack(side=tk.LEFT, padx=2)
         bind_status_tip(b_step, "Execute one instruction (F7).", self)
-        b_run = ttk.Button(bar, text="Run N (F6)", command=self._on_run_n)
+        b_run = ttk.Button(row_run, text="Run N", command=self._on_run_n)
         b_run.pack(side=tk.LEFT, padx=2)
         bind_status_tip(b_run, "Run N steps; large N runs in background (F6).", self)
-        ttk.Label(bar, text="N:").pack(side=tk.LEFT)
+        ttk.Label(row_run, text="N:").pack(side=tk.LEFT)
         self._var_n = tk.StringVar(value="1")
-        ttk.Entry(bar, textvariable=self._var_n, width=8).pack(side=tk.LEFT, padx=2)
+        ttk.Entry(row_run, textvariable=self._var_n, width=8).pack(side=tk.LEFT, padx=2)
         for preset in ("1", "100", "1000", "10000"):
-            ttk.Button(bar, text=preset, command=lambda v=preset: self._set_n_preset(v)).pack(side=tk.LEFT, padx=1)
-        b_cont = ttk.Button(bar, text="Continue… (F8)", command=self._on_continue)
+            ttk.Button(row_run, text=preset, command=lambda v=preset: self._set_n_preset(v)).pack(
+                side=tk.LEFT, padx=1
+            )
+        b_cont = ttk.Button(row_run, text="Continue", command=self._on_continue)
         b_cont.pack(side=tk.LEFT, padx=2)
         bind_status_tip(b_cont, "Run up to max steps or until halt/break (F8).", self)
-        ttk.Label(bar, text="max:").pack(side=tk.LEFT)
+        ttk.Label(row_run, text="max:").pack(side=tk.LEFT)
         self._var_max = tk.StringVar(value="100000")
-        ttk.Entry(bar, textvariable=self._var_max, width=10).pack(side=tk.LEFT, padx=2)
+        ttk.Entry(row_run, textvariable=self._var_max, width=10).pack(side=tk.LEFT, padx=2)
         for preset in ("1000", "10000", "100000"):
-            ttk.Button(bar, text=preset, command=lambda v=preset: self._set_max_preset(v)).pack(side=tk.LEFT, padx=1)
-        b_reset = ttk.Button(bar, text="Reset (Ctrl+R)", command=self._on_reset)
+            ttk.Button(row_run, text=preset, command=lambda v=preset: self._set_max_preset(v)).pack(
+                side=tk.LEFT, padx=1
+            )
+        b_reset = ttk.Button(row_run, text="Reset", command=self._on_reset)
         b_reset.pack(side=tk.LEFT, padx=2)
         bind_status_tip(b_reset, "Reset CPU state; breakpoints preserved (Ctrl+R).", self)
-        ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
-        ttk.Label(bar, text="Core:").pack(side=tk.LEFT)
+
+        ttk.Label(row_extra, text="Core:").pack(side=tk.LEFT)
         cb_core = ttk.Combobox(
-            bar,
+            row_extra,
             textvariable=self._var_core,
             values=sorted(VARIANT_CORE_INFO.keys()),
             state="readonly",
@@ -203,15 +212,14 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
             "Switch ISA profile (full / tn9k / lite). Resets CPU; keeps breakpoints.",
             self,
         )
-        ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
-        cb_auto = ttk.Checkbutton(bar, text="Auto", variable=self._var_auto, command=self._toggle_auto)
+        ttk.Separator(row_extra, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
+        cb_auto = ttk.Checkbutton(row_extra, text="Auto", variable=self._var_auto, command=self._toggle_auto)
         cb_auto.pack(side=tk.LEFT, padx=2)
-        bind_status_tip(cb_auto, "Step or burst repeatedly at interval (Ctrl+A).", self)
-        ttk.Label(bar, text="ms:").pack(side=tk.LEFT)
-        ttk.Entry(bar, textvariable=self._var_auto_ms, width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(bar, text="burst:").pack(side=tk.LEFT)
-        ttk.Entry(bar, textvariable=self._var_burst, width=5).pack(side=tk.LEFT, padx=2)
-        ttk.Label(bar, text="(1=single step)").pack(side=tk.LEFT, padx=2)
+        bind_status_tip(cb_auto, "Step or burst repeatedly at interval (Ctrl+A). burst=1 → single step.", self)
+        ttk.Label(row_extra, text="ms:").pack(side=tk.LEFT)
+        ttk.Entry(row_extra, textvariable=self._var_auto_ms, width=6).pack(side=tk.LEFT, padx=2)
+        ttk.Label(row_extra, text="burst:").pack(side=tk.LEFT)
+        ttk.Entry(row_extra, textvariable=self._var_burst, width=5).pack(side=tk.LEFT, padx=2)
 
     def _apply_density_mode(self) -> None:
         apply_density_to_app(self)

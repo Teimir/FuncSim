@@ -1,8 +1,8 @@
 """Fonts and Treeview column widths for the debugger GUI."""
 
 # Initial window size (all 32 GPR + disasm + memory page visible on typical displays)
-DEFAULT_WINDOW_GEOMETRY = "1320x920"
-MIN_WINDOW_WIDTH = 1000
+DEFAULT_WINDOW_GEOMETRY = "1280x940"
+MIN_WINDOW_WIDTH = 900
 MIN_WINDOW_HEIGHT = 720
 REG_TREE_ROWS = 32
 DISASM_TREE_ROWS = 13
