@@ -5,10 +5,16 @@ pip install -e ".[dev]"
 python -m cli.debug_gui --hex examples/smoke.hex
 # или
 e32c-debug-gui --hex examples/smoke.hex --mmio
+e32c-debug-gui --core tn9k --hex examples/smoke.hex
 python examples/launch_smoke_gui.py
+python examples/launch_smoke_gui.py --core tn9k
 ```
 
-Флаги запуска — как у [12-cli-debug-repl.md](12-cli-debug-repl.md) (`debug_common`).
+Флаги запуска — как у [12-cli-debug-repl.md](12-cli-debug-repl.md) (`debug_common`), включая **`--core full|tn9k|lite`**.
+
+В окне: заголовок `E32C debugger — core <variant>` и строка состояния `core=…` (вкладка SPR показывает `CORE_INFO` / `FEATURES` для выбранного профиля).
+
+**Смена ядра** — только при перезапуске GUI с другим `--core` (во время сессии вариант не переключается).
 
 ## Панель инструментов
 

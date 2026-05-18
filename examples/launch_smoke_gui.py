@@ -3,6 +3,7 @@
 
 Run from repo root:
   python examples/launch_smoke_gui.py
+  python examples/launch_smoke_gui.py --core tn9k
 """
 
 from __future__ import annotations
@@ -15,18 +16,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from cli.debug_gui import DebuggerApp
-from core.debug_controller import DebugController
-from core.memory import Memory
-
-
-def main() -> None:
-    ram = Memory()
-    ctrl = DebugController.create(ram=ram, use_mmio=False, load_addr=0)
-    ctrl.load_hex_file(ROOT / "examples" / "smoke.hex")
-    ctrl.reset_cpu(preserve_breakpoints=True)
-    DebuggerApp(ctrl).mainloop()
+from cli.debug_gui.app import main
 
 
 if __name__ == "__main__":
-    main()
+    argv = [sys.argv[0], "--hex", str(ROOT / "examples" / "smoke.hex"), *sys.argv[1:]]
+    raise SystemExit(main(argv))

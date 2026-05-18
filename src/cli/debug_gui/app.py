@@ -22,7 +22,7 @@ from core.memory import Memory
 class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
     def __init__(self, ctrl: DebugController) -> None:
         super().__init__()
-        self.title("E32C debugger")
+        self.title(f"E32C debugger — core {ctrl.state.core_variant}")
         self._tip_override: str | None = None
         apply_ttk_theme(self)
         self._mono_font = FONT_MONO
@@ -180,17 +180,18 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         apply_density_to_app(self)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="E32C debugger GUI")
     add_sim_session_arguments(p)
-    args = p.parse_args()
+    args = p.parse_args(argv)
 
     ram = Memory()
     ctrl = create_debug_controller(ram, args)
     load_initial_image(ctrl, args)
     app = DebuggerApp(ctrl)
     app.mainloop()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

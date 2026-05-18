@@ -168,6 +168,7 @@ class SnapshotFillMixin:
         self._refresh_bp_list()
         self._var_page.set(hex(self._ctrl.mem_page_base))
         parts = [
+            f"core={snap.core_variant}",
             f"instr={snap.instruction_count}",
             f"cyc={snap.cycles}",
             f"halt={'Y' if snap.halted else 'N'}",

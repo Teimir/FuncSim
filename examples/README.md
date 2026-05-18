@@ -7,7 +7,7 @@
 | Файл | Тип | Назначение | Команда | Туториал |
 |------|-----|------------|---------|----------|
 | `smoke.hex` | hex | ADDI/ADD/SUB/HALT | `python examples/launch_smoke.py` | [00](../docs/tutorial/00-setup-and-repo.md), [11](../docs/tutorial/11-cli-simulator.md) |
-| `launch_smoke_gui.py` | py | GUI smoke | `python examples/launch_smoke_gui.py` | [13](../docs/tutorial/13-cli-debug-gui.md) |
+| `launch_smoke_gui.py` | py | GUI smoke | `python examples/launch_smoke_gui.py` [`--core tn9k`] | [13](../docs/tutorial/13-cli-debug-gui.md) |
 | `launch_gdb_smoke.py` | py | GDB batch (нужен `gdb`) | `python examples/launch_gdb_smoke.py` | [14](../docs/tutorial/14-gdb-remote.md) |
 | `device_demo.py` | py | MMIO GPIO/UART/Timer | `python examples/device_demo.py` | [10](../docs/tutorial/10-peripherals-mmio.md) |
 | `device_demo_gui.py` | py | То же в GUI | `python examples/device_demo_gui.py` | [13](../docs/tutorial/13-cli-debug-gui.md) |

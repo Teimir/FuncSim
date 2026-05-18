@@ -104,6 +104,7 @@ class UiSnapshot:
     break_pcs: frozenset[int]
     mmio: MmioSnapshot | None
     trace: list[StepTrace]
+    core_variant: str
 
 
 def _spr_name(idx: int) -> str | None:
@@ -257,10 +258,12 @@ class DebugController:
 
     def reset_cpu(self, *, preserve_breakpoints: bool = True) -> None:
         breaks = set(self.runner.break_pcs) if preserve_breakpoints else set()
+        variant = self.state.core_variant
         self.state.regs = [0] * 32
         self.state.flags = 0
         self.state.halted = False
         self.state.spr = {}
+        self.state.core_variant = variant
         self.state.set_pc(self.load_addr)
         self.runner.cycle_counter.reset()
         self.instruction_count = 0
@@ -499,4 +502,5 @@ class DebugController:
             break_pcs=frozenset(self.runner.break_pcs),
             mmio=mmio_snap,
             trace=list(self._trace),
+            core_variant=self.state.core_variant,
         )
