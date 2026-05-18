@@ -20,5 +20,6 @@ from cli.debug_gui.app import main
 
 
 if __name__ == "__main__":
-    argv = [sys.argv[0], "--hex", str(ROOT / "examples" / "smoke.hex"), *sys.argv[1:]]
+    # parse_args(argv) does not skip argv[0] — only pass flags, not script path
+    argv = ["--hex", str(ROOT / "examples" / "smoke.hex"), *sys.argv[1:]]
     raise SystemExit(main(argv))
