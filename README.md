@@ -14,7 +14,7 @@
 | [test/README.md](test/README.md)                         | RTL, testbench, cosim              |
 | [test/fpga/README.md](test/fpga/README.md)               | Прошивка платы                     |
 | [docs/gdb/README.md](docs/gdb/README.md)                 | GDB Remote stub                    |
-| [docs/tutorial_irq_timer.md](docs/tutorial_irq_timer.md) | IRQ + timer (симулятор)          |
+| [docs/tutorial/README.md](docs/tutorial/README.md) | **Туториалы** (ISA, ядро, MMIO, GUI, GDB) |
 | [examples/README.md](examples/README.md)               | Каталог примеров и команд          |
 | [UARTexampleGOWIN/README.md](UARTexampleGOWIN/README.md) | Референс UART Gowin                |
 
@@ -139,11 +139,12 @@ E32C/
 #### Timer (`+0x2000`)
 
 
-| +offset         | Имя             | Доступ                           |
-| --------------- | --------------- | -------------------------------- |
-| `0x00` / `0x04` | COUNTER_LO / HI | R                                |
-| `0x08` / `0x0C` | COMPARE_LO / HI | R/W                              |
-| `0x10`          | CTRL            | R/W — IRQ_EN, PENDING, ACK (W1C) |
+| +offset | Имя | Доступ |
+| ------- | --- | ------ |
+| `0x00` | COUNTER | R — 32-bit счётчик |
+| `0x04` | COUNTER_HI_PAD | R — 0 |
+| `0x08` / `0x0C` | PERIOD_LO / PERIOD_HI | R/W — порог |
+| `0x10` | CTRL | R/W — IRQ_EN, PENDING, ACK (W1C) |
 
 
 #### SD @ `+0x3000` — режим **block** (по умолчанию)

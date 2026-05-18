@@ -8,7 +8,9 @@
 python scripts/gen_mmio.py
 ```
 
-→ `[src/core/mmio_constants.py](../src/core/mmio_constants.py)`, `[test/src/mmio_generated.svh](../test/src/mmio_generated.svh)`.
+→ `[src/core/mmio_constants.py](../src/core/mmio_constants.py)`, `[src/core/mmio_uart_regs.py](../src/core/mmio_uart_regs.py)`, `[src/core/mmio_timer_regs.py](../src/core/mmio_timer_regs.py)`, `[src/core/mmio_sd_regs.py](../src/core/mmio_sd_regs.py)`, `[test/src/mmio_generated.svh](../test/src/mmio_generated.svh)`, `[test/src/uart_regs.svh](../test/src/uart_regs.svh)`, `[test/src/mmio_timer_regs.svh](../test/src/mmio_timer_regs.svh)`.
+
+Единый контракт Python ↔ RTL: [wrapper_interface.md](wrapper_interface.md).
 
 Обзор и сводная карта: [../README.md](../README.md#карта-адресов).
 
@@ -69,25 +71,19 @@ TX/RX FIFO depth **8** (запись в TX при full — stall APB `pready=0` 
 
 ## Timer (`+0x2000`)
 
-Модель: [`src/core/peripherals/timer.py`](../src/core/peripherals/timer.py).
+Модель: [`src/core/peripherals/timer.py`](../src/core/peripherals/timer.py). RTL: [`test/src/timer.sv`](../test/src/timer.sv).
 
-### LO / HI = одно 64-битное значение
+| +offset | Имя | Доступ | Описание |
+| ------- | --- | ------ | -------- |
+| `0x00` | COUNTER | R | 32-битный счётчик (накапливается по retired cycles) |
+| `0x04` | COUNTER_HI_PAD | R | всегда `0` |
+| `0x08` | PERIOD_LO | R/W | младшие 32 бита порога `period` |
+| `0x0C` | PERIOD_HI | R/W | старшие 16 бит порога (`[31:16]` в слове) |
+| `0x10` | CTRL | R/W | bit0 IRQ_EN; bit1 PENDING (R); bit2 ACK (W1C) |
+| `0x18` | PERIOD_LO (alias) | R/W | дубликат `+0x08` (Python/RTL) |
+| `0x1C` | PERIOD_HI (alias) | R/W | дубликат `+0x0C` |
 
-MMIO доступно только **32-битными словами**. Счётчик и compare внутри модели — **64-bit**; в карте регистров они разбиты на пару LO/HI (как в типичных APB-таймерах).
-
-| +offset | Имя        | Доступ | Биты |
-| ------- | ---------- | ------ | ---- |
-| `0x00`  | COUNTER_LO | R      | [31:0] счётчика |
-| `0x04`  | COUNTER_HI | R      | [63:32] счётчика |
-| `0x08`  | COMPARE_LO | R/W    | [31:0] порога |
-| `0x0C`  | COMPARE_HI | R/W    | [63:32] порога |
-| `0x10`  | CTRL       | R/W    | IRQ_EN, PENDING, ACK (W1C) |
-
-**Согласованное чтение счётчика:** сначала `COUNTER_HI`, затем `COUNTER_LO` — симулятор фиксирует снимок на чтении HI (см. код таймера).
-
-**CTRL:** bit0 `IRQ_EN`; bit1 `PENDING` (read); bit2 `ACK` (W1C).
-
-При `cycles >= compare` и включённых IRQ CPU — см. [peripherals.md](peripherals.md), [tutorial_irq_timer.md](tutorial_irq_timer.md).
+При `counter >= period`, `IRQ_EN` и разрешённых IRQ CPU — см. [peripherals.md](peripherals.md), [tutorial_irq_timer.md](tutorial_irq_timer.md).
 
 ---
 

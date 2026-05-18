@@ -1,21 +1,21 @@
-"""UART: TX/RX FIFO (depth 8), status flags aligned with test/src/uart.sv."""
+"""UART: TX/RX FIFO, status flags aligned with test/src/uart.sv (see docs/isa/mmio_map.yaml)."""
 
 from __future__ import annotations
 
 from collections import deque
 from collections.abc import Callable
 
-FIFO_DEPTH = 8
+from core.mmio_uart_regs import UartRegs
 
-UART_TX = 0
-UART_RX = 4
-UART_STATUS = 8
-UART_CTRL = 12
-
-FLAG_RX_READY = 1 << 0
-FLAG_TX_IDLE = 1 << 1
-FLAG_TX_FULL = 1 << 2
-FLAG_RX_FULL = 1 << 3
+FIFO_DEPTH = UartRegs.FIFO_DEPTH
+UART_TX = UartRegs.UART_TX
+UART_RX = UartRegs.UART_RX
+UART_STATUS = UartRegs.UART_STATUS
+UART_CTRL = UartRegs.UART_CTRL
+FLAG_RX_READY = UartRegs.FLAG_RX_READY
+FLAG_TX_IDLE = UartRegs.FLAG_TX_IDLE
+FLAG_TX_FULL = UartRegs.FLAG_TX_FULL
+FLAG_RX_FULL = UartRegs.FLAG_RX_FULL
 
 
 class Uart:

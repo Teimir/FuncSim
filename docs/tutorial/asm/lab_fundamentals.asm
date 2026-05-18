@@ -1,0 +1,4 @@
+# Lab 01: NOP, ADDI, HALT — r2=42
+NOP
+ADDI 0 2 42
+HALT

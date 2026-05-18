@@ -94,7 +94,7 @@ flowchart TB
 | ------ | ------------------------ | -------------------------------------------------------------------- |
 | GPIO   | `peripherals/gpio.py`    | 32-битный выходной защёлка                                           |
 | UART   | `peripherals/uart.py`    | TX/RX очереди, STATUS                                                |
-| Timer  | `peripherals/timer.py`   | 64-bit счётчик циклов, compare, IRQ логика                           |
+| Timer  | `peripherals/timer.py`   | 32-bit счётчик циклов, period, IRQ логика                            |
 | SD     | `peripherals/sd_card.py` | Буфер сектора 512 байт, LBA, команды read/write/flush, файл на хосте |
 
 

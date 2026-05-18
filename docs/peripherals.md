@@ -1,61 +1,21 @@
 # MMIO периферия (FuncSim)
 
-Базовый адрес по умолчанию: **`0xFFFF_0000`** (`MMIO_BASE`). Доступ только **выровненными 32-битными словами** (`LDR`/`STR` с `mask = 0xF`).
+**Актуальная карта регистров и единый контракт Python ↔ RTL:** [mmio.md](mmio.md), [wrapper_interface.md](wrapper_interface.md).
 
-## GPIO
+Источник истины для генерации констант: [`isa/mmio_map.yaml`](isa/mmio_map.yaml) → `python scripts/gen_mmio.py`.
 
-| Смещение от MMIO_BASE | Регистр   | Доступ | Описание |
-|----------------------|-----------|--------|----------|
-| `0x0000`             | `GPIO_OUT`| R/W    | 32 выходных линий; чтение возвращает последнее записанное значение |
+## Кратко по устройствам
 
-## UART (упрощённо)
-
-База: `MMIO_BASE + 0x1000`.
-
-| Смещение | Регистр       | Доступ | Описание |
-|----------|---------------|--------|----------|
-| `0x000`  | `UART_TX`     | W      | Младший байт `value & 0xFF` уходит в TX-буфер (и опционально в stdout) |
-| `0x004`  | `UART_RX`     | R      | Байт из RX-очереди; пусто → `0` |
-| `0x008`  | `UART_STATUS` | R      | бит0: RX ready; бит1: TX idle (в модели всегда `1`) |
-
-Запись в `UART_TX` через маску байтов: эффективен только младший байт слова (как при `mask` с байтом 0).
-
-## Timer (от глобального счётчика циклов)
-
-База: `MMIO_BASE + 0x2000`. Счётчик циклов — **64-битное** неотрицательное целое, накапливается в симуляторе после каждой инструкции.
-
-| Смещение | Регистр           | Доступ | Описание |
-|----------|-------------------|--------|----------|
-| `0x000`  | `TMR_CYCLES_LO`   | R      | Младшие 32 бита текущего `cycles` |
-| `0x004`  | `TMR_CYCLES_HI`   | R      | Старшие 32 бита |
-| `0x008`  | `TMR_COMPARE_LO`  | R/W    | Младшие 32 бита порога `compare` |
-| `0x00C`  | `TMR_COMPARE_HI`  | R/W    | Старшие 32 бита |
-| `0x010`  | `TMR_CTRL`        | R/W    | См. ниже |
-
-### `TMR_CTRL`
-
-- **бит 0** — `IRQ_EN`: разрешить прерывание по условию `cycles >= compare`.
-- **бит 1** — `PENDING` (чтение): «событие сработало», блокирует повторный вызов IRQ до сброса.
-- **бит 2** — `ACK`: **W1C** — запись слова с установленным битом 2 сбрасывает `PENDING`.
-
-При выполнении условия **`IRQ_EN` и `cycles >= compare` и не `PENDING`** и **`Intenable` в флагах CPU** и **бит 0 в `SPR[IRQ_MASK]` сброшен** (линия 0 не замаскирована): выставляется `PENDING`, вызывается `raise_irq(return_pc, line=0)`, где **`return_pc`** — адрес **следующей** инструкции после завершённого шага. Маска — см. [isa/spec.md](isa/spec.md) (SPR **IRQ_MASK**).
-
-Повторное срабатывание после обработки: сбросить `PENDING` (бит 2), при необходимости увеличить `compare` или дождаться роста `cycles`.
-
-Пока у CPU включён `Intenable`, условие `cycles >= compare` остаётся истинным: после сброса `PENDING` IRQ может запроситься снова **на следующем же шаге**. Имеет смысл в начале обработчика выполнить **`DI`**, либо снять `IRQ_EN` у таймера, либо поднять `compare`, затем уже ACK и работа с устройствами.
-
-## Python vs RTL (функциональная модель)
-
-| Аспект | Python (`src/core/peripherals/`) | RTL (`test/src/`) |
-|--------|----------------------------------|-------------------|
-| UART | TX/RX очереди, мгновенный STATUS | `uart.sv` + stream test |
-| Timer | cycle counter hook | `timer.sv` |
-| SD | Block LBA **или** SPI registers (`--sd-spi`) | `sd_spi.sv` (SPI протокол) |
-
-Python: по умолчанию **block** MMIO @ `+0x3000`; флаг `--sd-spi` / `SystemBus(sd_spi=True)` переключает на **SPI command** регистры (см. `src/core/peripherals/sd_spi.py`, карта как в RTL `apb_sd_spi`).
+| Устройство | Python | RTL | Примечание |
+|----------|--------|-----|------------|
+| GPIO | `peripherals/gpio.py` | `test/src/gpio.sv` | 32-bit OUT @ device+0 |
+| UART | `peripherals/uart.py` | `test/src/uart.sv` | FIFO 8, STATUS/CTRL как в YAML |
+| Timer | `peripherals/timer.py` | `test/src/timer.sv` | 32-bit counter/period, IRQ line |
+| SD block | `peripherals/sd_card.py` | `test/src/sd_block.sv` | образ файла на хосте |
+| SD SPI | `peripherals/sd_spi.py` | `test/src/sd_spi.sv` | `--sd-spi`, TN9K |
 
 ## Стоимость инструкций (циклы)
 
-Задаётся в [`src/core/cycles.py`](../src/core/cycles.py). По умолчанию большинство инструкций стоят **1** цикл; `MUL` — **3**, `LDR`/`STR` — **2** (условная модель).
+[`src/core/cycles.py`](../src/core/cycles.py): большинство инструкций — 1 цикл; `MUL` — 3; `LDR`/`STR` — 2.
 
-Отчёт в CLI: `instructions`, `cycles`, при `--cycle-ns` — приблизительные наносекунды `cycles * cycle_ns`.
+CLI: `instructions`, `cycles`; при `--cycle-ns` — приблизительные наносекунды.

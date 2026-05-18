@@ -1,4 +1,4 @@
-# Single source of truth for MMIO bases (Python simulator + RTL).
+# Single source of truth for MMIO bases and register layouts (Python + RTL).
 # After edits, run: python scripts/gen_mmio.py
 
 mmio_base: 0xFFFF0000
@@ -16,14 +16,45 @@ devices:
     offset: 0x0000
     python_region_bytes: 4
     rtl_apb: true
+    registers:
+      - { name: OUT, offset: 0x00, access: rw }
+
   uart:
     offset: 0x1000
     python_region_bytes: 0x10
     rtl_apb: true
+    fifo_depth: 8
+    registers:
+      - { name: TXDATA, offset: 0x00, access: w }
+      - { name: RXDATA, offset: 0x04, access: r }
+      - { name: STATUS, offset: 0x08, access: r }
+      - { name: CTRL, offset: 0x0c, access: rw }
+    status_bits:
+      - { name: RX_READY, bit: 0 }
+      - { name: TX_IDLE, bit: 1 }
+      - { name: TX_FULL, bit: 2 }
+      - { name: RX_FULL, bit: 3 }
+    ctrl_bits:
+      - { name: IRQ_RX, bit: 0 }
+      - { name: IRQ_TX, bit: 1 }
+
   timer:
     offset: 0x2000
     python_region_bytes: 0x20
     rtl_apb: true
+    registers:
+      - { name: COUNTER, offset: 0x00, access: r }
+      - { name: COUNTER_HI_PAD, offset: 0x04, access: r }
+      - { name: PERIOD_LO, offset: 0x08, access: rw }
+      - { name: PERIOD_HI, offset: 0x0c, access: rw }
+      - { name: CTRL, offset: 0x10, access: rw }
+      - { name: PERIOD_LO_ALIAS, offset: 0x18, access: rw, alias_of: PERIOD_LO }
+      - { name: PERIOD_HI_ALIAS, offset: 0x1c, access: rw, alias_of: PERIOD_HI }
+    ctrl_bits:
+      - { name: IRQ_EN, bit: 0 }
+      - { name: PENDING, bit: 1 }
+      - { name: ACK_W1C, bit: 2 }
+
   sd:
     offset: 0x3000
     python_region_bytes: 0x210
@@ -32,20 +63,20 @@ devices:
       block:
         python_region_bytes: 0x210
         registers:
-          - { name: CTRL,   offset: 0x00, access: w }
+          - { name: CTRL, offset: 0x00, access: w }
           - { name: STATUS, offset: 0x04, access: r }
-          - { name: LBA,    offset: 0x08, access: rw }
-          - { name: DATA,   offset: 0x10, size: 0x200, access: rw }
+          - { name: LBA, offset: 0x08, access: rw }
+          - { name: DATA, offset: 0x10, size: 0x200, access: rw }
       spi:
         python_region_bytes: 0x28
         registers:
-          - { name: CTRL,    offset: 0x00, access: rw }
-          - { name: DIV,     offset: 0x04, access: rw }
-          - { name: CMD,     offset: 0x08, access: rw }
-          - { name: ARG,     offset: 0x0c, access: rw }
-          - { name: RESP0,   offset: 0x10, access: r }
-          - { name: STATUS,  offset: 0x14, access: r }
-          - { name: BLKIDX,  offset: 0x18, access: rw }
-          - { name: DATAIX,  offset: 0x1c, access: rw }
-          - { name: DATARD,  offset: 0x20, access: r }
-          - { name: DATAWR,  offset: 0x24, access: w }
+          - { name: CTRL, offset: 0x00, access: rw }
+          - { name: DIV, offset: 0x04, access: rw }
+          - { name: CMD, offset: 0x08, access: rw }
+          - { name: ARG, offset: 0x0c, access: rw }
+          - { name: RESP0, offset: 0x10, access: r }
+          - { name: STATUS, offset: 0x14, access: r }
+          - { name: BLKIDX, offset: 0x18, access: rw }
+          - { name: DATAIX, offset: 0x1c, access: rw }
+          - { name: DATARD, offset: 0x20, access: r }
+          - { name: DATAWR, offset: 0x24, access: w }

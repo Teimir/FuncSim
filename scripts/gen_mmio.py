@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate mmio_generated.svh, mmio_sd_regs.svh, mmio_constants.py from docs/isa/mmio_map.yaml."""
+"""Generate MMIO headers for Python and RTL from docs/isa/mmio_map.yaml."""
 
 from __future__ import annotations
 
@@ -12,8 +12,13 @@ ROOT = Path(__file__).resolve().parent.parent
 YAML_PATH = ROOT / "docs" / "isa" / "mmio_map.yaml"
 SVH_OUT = ROOT / "test" / "src" / "mmio_generated.svh"
 SD_REGS_SVH = ROOT / "test" / "src" / "mmio_sd_regs.svh"
+UART_REGS_SVH = ROOT / "test" / "src" / "uart_regs.svh"
+TIMER_REGS_SVH = ROOT / "test" / "src" / "mmio_timer_regs.svh"
 PY_OUT = ROOT / "src" / "core" / "mmio_constants.py"
 SD_REGS_PY = ROOT / "src" / "core" / "mmio_sd_regs.py"
+UART_REGS_PY = ROOT / "src" / "core" / "mmio_uart_regs.py"
+TIMER_REGS_PY = ROOT / "src" / "core" / "mmio_timer_regs.py"
+GPIO_REGS_PY = ROOT / "src" / "core" / "mmio_gpio_regs.py"
 
 HEADER_SVH = """// GENERATED FILE — do not edit by hand.
 // Source: docs/isa/mmio_map.yaml  |  Regenerate: python scripts/gen_mmio.py
@@ -69,12 +74,84 @@ def _emit_sd_regs_py(sd_modes: dict) -> str:
             off = int(reg["offset"])
             lines.append(f"    REG_{name} = {_hex_py(off)}\n")
         if mode_name == "block":
-            lines.append(f"    DATA_BASE = REG_DATA\n")
+            lines.append("    DATA_BASE = REG_DATA\n")
             lines.append(f"    REGION_SIZE = {_hex_py(int(mode['python_region_bytes']))}\n")
         else:
             lines.append(f"    REGION_SIZE = {_hex_py(int(mode['python_region_bytes']))}\n")
         lines.append("\n\n")
     lines.append('__all__ = ["SdBlockRegs", "SdSpiRegs"]\n')
+    return "".join(lines)
+
+
+def _emit_device_regs_py(
+    cls: str,
+    ent: dict,
+    *,
+    status_bits: list[dict] | None = None,
+    ctrl_bits: list[dict] | None = None,
+    extra_lines: list[str] | None = None,
+) -> str:
+    lines = [HEADER_PY, f"# {cls} offsets relative to device base in SystemBus\n\n", f"class {cls}:\n"]
+    for reg in ent.get("registers", []):
+        name = reg["name"].upper()
+        off = int(reg["offset"])
+        lines.append(f"    REG_{name} = {_hex_py(off)}\n")
+    if "fifo_depth" in ent:
+        lines.append(f"    FIFO_DEPTH = {_hex_py(int(ent['fifo_depth']))}\n")
+    if status_bits:
+        lines.append("\n")
+        for bit in status_bits:
+            bname = bit["name"].upper()
+            lines.append(f"    STAT_{bname} = 1 << {int(bit['bit'])}\n")
+    if ctrl_bits:
+        lines.append("\n")
+        for bit in ctrl_bits:
+            bname = bit["name"].upper()
+            lines.append(f"    CTRL_{bname} = 1 << {int(bit['bit'])}\n")
+    if extra_lines:
+        lines.extend(extra_lines)
+    lines.append(f"\n\n__all__ = [{cls!r}]\n")
+    return "".join(lines)
+
+
+def _emit_uart_regs_svh(ent: dict) -> str:
+    lines = [
+        HEADER_SVH.rstrip() + "\n\n",
+        "`ifndef E32C_UART_REGS_SVH\n",
+        "`define E32C_UART_REGS_SVH\n\n",
+    ]
+    for reg in ent.get("registers", []):
+        name = reg["name"].upper()
+        off = int(reg["offset"])
+        lines.append(f"localparam logic [5:0] E32C_UART_OFF_{name} = 6'h{off:02x};\n")
+    lines.append("\n")
+    for bit in ent.get("status_bits", []):
+        lines.append(f"localparam int E32C_UART_STAT_{bit['name'].upper()} = {int(bit['bit'])};\n")
+    lines.append("\n")
+    for bit in ent.get("ctrl_bits", []):
+        lines.append(f"localparam int E32C_UART_CTRL_{bit['name'].upper()} = {int(bit['bit'])};\n")
+    lines.append("\n`endif // E32C_UART_REGS_SVH\n")
+    return "".join(lines)
+
+
+def _emit_timer_regs_svh(ent: dict) -> str:
+    lines = [
+        HEADER_SVH.rstrip() + "\n\n",
+        "`ifndef E32C_MMIO_TIMER_REGS_SVH\n",
+        "`define E32C_MMIO_TIMER_REGS_SVH\n\n",
+    ]
+    for reg in ent.get("registers", []):
+        if reg.get("alias_of"):
+            continue
+        name = reg["name"].upper()
+        off = int(reg["offset"])
+        word_ix = off // 4
+        lines.append(f"localparam logic [5:0] E32C_TIMER_OFF_{name} = 6'h{off:02x};\n")
+        lines.append(f"localparam logic [3:0] E32C_TIMER_WORD_{name} = 4'h{word_ix:x};\n")
+    lines.append("\n")
+    for bit in ent.get("ctrl_bits", []):
+        lines.append(f"localparam int E32C_TIMER_CTRL_{bit['name'].upper()} = {int(bit['bit'])};\n")
+    lines.append("\n`endif // E32C_MMIO_TIMER_REGS_SVH\n")
     return "".join(lines)
 
 
@@ -155,14 +232,49 @@ def main() -> int:
         ]
     )
 
+    uart_ent = devices["uart"]
+    timer_ent = devices["timer"]
+    gpio_ent = devices["gpio"]
+
+    uart_py = _emit_device_regs_py(
+        "UartRegs",
+        uart_ent,
+        status_bits=uart_ent.get("status_bits"),
+        ctrl_bits=uart_ent.get("ctrl_bits"),
+        extra_lines=[
+            "\n    # Legacy aliases (Python drivers)\n",
+            "    UART_TX = REG_TXDATA\n",
+            "    UART_RX = REG_RXDATA\n",
+            "    UART_STATUS = REG_STATUS\n",
+            "    UART_CTRL = REG_CTRL\n",
+            "    FLAG_RX_READY = STAT_RX_READY\n",
+            "    FLAG_TX_IDLE = STAT_TX_IDLE\n",
+            "    FLAG_TX_FULL = STAT_TX_FULL\n",
+            "    FLAG_RX_FULL = STAT_RX_FULL\n",
+        ],
+    )
+    timer_py = _emit_device_regs_py("TimerRegs", timer_ent, ctrl_bits=timer_ent.get("ctrl_bits"))
+    gpio_py = _emit_device_regs_py("GpioRegs", gpio_ent)
+
     SVH_OUT.write_text("".join(svh), encoding="utf-8", newline="\n")
     SD_REGS_SVH.write_text(_emit_sd_regs_svh(sd_modes), encoding="utf-8", newline="\n")
+    UART_REGS_SVH.write_text(_emit_uart_regs_svh(uart_ent), encoding="utf-8", newline="\n")
+    TIMER_REGS_SVH.write_text(_emit_timer_regs_svh(timer_ent), encoding="utf-8", newline="\n")
     PY_OUT.write_text("".join(py_lines), encoding="utf-8", newline="\n")
     SD_REGS_PY.write_text(_emit_sd_regs_py(sd_modes), encoding="utf-8", newline="\n")
+    UART_REGS_PY.write_text(uart_py, encoding="utf-8", newline="\n")
+    TIMER_REGS_PY.write_text(timer_py, encoding="utf-8", newline="\n")
+    GPIO_REGS_PY.write_text(gpio_py, encoding="utf-8", newline="\n")
+
     print(f"Wrote {SVH_OUT.relative_to(ROOT)}")
     print(f"Wrote {SD_REGS_SVH.relative_to(ROOT)}")
+    print(f"Wrote {UART_REGS_SVH.relative_to(ROOT)}")
+    print(f"Wrote {TIMER_REGS_SVH.relative_to(ROOT)}")
     print(f"Wrote {PY_OUT.relative_to(ROOT)}")
     print(f"Wrote {SD_REGS_PY.relative_to(ROOT)}")
+    print(f"Wrote {UART_REGS_PY.relative_to(ROOT)}")
+    print(f"Wrote {TIMER_REGS_PY.relative_to(ROOT)}")
+    print(f"Wrote {GPIO_REGS_PY.relative_to(ROOT)}")
     return 0
 
 

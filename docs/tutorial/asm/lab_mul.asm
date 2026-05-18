@@ -1,0 +1,5 @@
+# Lab 05: MUL 6*7=42 in r3
+MOV 1 6
+MOV 2 7
+MUL 1 2 3 0
+HALT

@@ -1,0 +1,6 @@
+# Lab 04: STR/LDR byte mask at addr 0x100 — r5=0x000000AA
+MOV 1 0x100
+MOV 2 0xAA
+STR 1 2 1 0
+LDR 1 5 1 0
+HALT
