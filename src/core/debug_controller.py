@@ -209,10 +209,12 @@ class DebugController:
         uart: object | None = None,
         sd_image: Path | None = None,
         sd_create_sectors: int | None = None,
+        core_variant: str = "full",
+        sd_spi: bool = False,
     ) -> DebugController:
         from core.bus import MMIO_BASE_DEFAULT
 
-        st = CPUState()
+        st = CPUState.for_variant(core_variant)
         if use_mmio:
             from core.peripherals.uart import Uart
 
@@ -224,6 +226,7 @@ class DebugController:
                 uart=u,
                 sd_image=sd_image,
                 sd_create_sectors=sd_create_sectors,
+                sd_spi=sd_spi,
             )
         else:
             mem = ram

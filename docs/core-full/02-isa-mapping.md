@@ -6,48 +6,56 @@ Python full: все мнемоники из YAML легальны (`VARIANT_ILLE
 
 ## Форматы инструкций
 
-| format | Поля (биты) | Мнемоники |
-|--------|-------------|-----------|
-| `bare` | — | EI, DI, IRET |
-| `rrr` | r1, r2, res | ADD, SUB, AND, OR, XOR, ADDS, SUBS, BIC, MVN, NEG, SLL, SLR, SAL, ROL, ROR, ADC, ADCS, SBC, SBCS, ANDS |
-| `imm16` | r1, immh, res, imm11 | ADDI, SUBI, ADDSI, SUBSI |
-| `load_store` | raddr, r1/dest, imm11, mask | LDR, LDRPRE, LDRPOST, LDREX |
-| `store` | raddr, r1/src, imm11, mask | STR, STRPRE, STRPOST |
-| `strex` | raddr, r1, rstatus, imm11 | STREX |
-| `mul` | r1, r2, res | SMUL, MUL |
-| `mul64` | r1, r2, res, resh | UMULL, SMULL |
-| `mla` | r1, r2, res | MLA |
-| `branch` | r1, imm11 | JMP, JZ, JNZ, JC, JS, JO |
-| `branch_cond` | cond, r1, imm11 | BJ |
-| `spr` | r1, spr | READSPR, WRITESPR |
+
+| format        | Поля (биты)                 | Мнемоники                                                                                              |
+| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `bare`        | —                           | EI, DI, IRET                                                                                           |
+| `rrr`         | r1, r2, res                 | ADD, SUB, AND, OR, XOR, ADDS, SUBS, BIC, MVN, NEG, SLL, SLR, SAL, ROL, ROR, ADC, ADCS, SBC, SBCS, ANDS |
+| `imm16`       | r1, immh, res, imm11        | ADDI, SUBI, ADDSI, SUBSI                                                                               |
+| `load_store`  | raddr, r1/dest, imm11, mask | LDR, LDRPRE, LDRPOST, LDREX                                                                            |
+| `store`       | raddr, r1/src, imm11, mask  | STR, STRPRE, STRPOST                                                                                   |
+| `strex`       | raddr, r1, rstatus, imm11   | STREX                                                                                                  |
+| `mul`         | r1, r2, res                 | SMUL, MUL                                                                                              |
+| `mul64`       | r1, r2, res, resh           | UMULL, SMULL                                                                                           |
+| `mla`         | r1, r2, res                 | MLA                                                                                                    |
+| `branch`      | r1, imm11                   | JMP, JZ, JNZ, JC, JS, JO                                                                               |
+| `branch_cond` | cond, r1, imm11             | BJ                                                                                                     |
+| `spr`         | r1, spr                     | READSPR, WRITESPR                                                                                      |
+
 
 ## Группы по функции
 
 ### Память — загрузка
 
-| Mnemonic | Действие |
-|----------|----------|
-| LDR | `EA = R[raddr]+imm`; load с маской в R[dest@20:16] |
-| LDRPRE | `R[raddr] += imm`; load по новому базовому |
-| LDRPOST | load; затем `R[raddr] += imm` |
-| LDREX | установить exclusive monitor + load |
+
+| Mnemonic | Действие                                           |
+| -------- | -------------------------------------------------- |
+| LDR      | `EA = R[raddr]+imm`; load с маской в R[dest@20:16] |
+| LDRPRE   | `R[raddr] += imm`; load по новому базовому         |
+| LDRPOST  | load; затем `R[raddr] += imm`                      |
+| LDREX    | установить exclusive monitor + load                |
+
 
 ### Память — сохранение
 
-| Mnemonic | Действие |
-|----------|----------|
-| STR | store с маской |
-| STRPRE / STRPOST | аналогично pre/post index |
-| STREX | условный store + status в `rstatus` |
+
+| Mnemonic         | Действие                            |
+| ---------------- | ----------------------------------- |
+| STR              | store с маской                      |
+| STRPRE / STRPOST | аналогично pre/post index           |
+| STREX            | условный store + status в `rstatus` |
+
 
 ### Умножение
 
-| Mnemonic | Результат |
-|----------|-----------|
-| SMUL | signed 32×32 → low 32 в `res` |
-| MUL | unsigned 64; low→`res`, high→`resh` [10:6] |
-| UMULL / SMULL | то же для unsigned / signed 64-bit product |
-| MLA | `res ← (R[r1]*R[r2])[31:0] + R[res_field]` — аккумулятор в поле **res** [15:11] |
+
+| Mnemonic      | Результат                                                                       |
+| ------------- | ------------------------------------------------------------------------------- |
+| SMUL          | signed 32×32 → low 32 в `res`                                                   |
+| MUL           | unsigned 64; low→`res`, high→`resh` [10:6]                                      |
+| UMULL / SMULL | то же для unsigned / signed 64-bit product                                      |
+| MLA           | `res ← (R[r1]*R[r2])[31:0] + R[res_field]` — аккумулятор в поле **res** [15:11] |
+
 
 ### Арифметика/логика (без флагов)
 
@@ -59,34 +67,40 @@ ADDS, SUBS, ADCS, SBCS, ANDS, ADDSI, SUBSI — обновляют Z, C, V, S п�
 
 ### Переходы
 
-| Mnemonic | Условие |
-|----------|---------|
-| JMP | безусловно `PC = R[r1] + imm11` |
-| JZ / JNZ | Zero / not Zero |
-| JC / JS / JO | Carry / Sign / Overflow |
-| BJ | ARM-стиль: cond 0–14 в [25:22] |
+
+| Mnemonic     | Условие                         |
+| ------------ | ------------------------------- |
+| JMP          | безусловно `PC = R[r1] + imm11` |
+| JZ / JNZ     | Zero / not Zero                 |
+| JC / JS / JO | Carry / Sign / Overflow         |
+| BJ           | ARM-стиль: cond 0–14 в [25:22]  |
+
 
 ### Системные
 
-| Mnemonic | Эффект |
-|----------|--------|
-| NOP | нет |
-| HALT | останов |
-| EI / DI | Intenable on/off |
-| READSPR / WRITESPR | доступ к SPR |
-| IRET | return from IRQ |
+
+| Mnemonic           | Эффект           |
+| ------------------ | ---------------- |
+| NOP                | нет              |
+| HALT               | останов          |
+| EI / DI            | Intenable on/off |
+| READSPR / WRITESPR | доступ к SPR     |
+| IRET               | return from IRQ  |
+
 
 ## Псевдо-операции (ассемблер)
 
 Не отдельные opcodes; разворачиваются в `core/asm.py`:
 
-| Pseudo | Expansion |
-|--------|-----------|
-| CMP r1, r2 | SUBS r1, r2, 0 |
-| CMN r1, r2 | ADDS r1, r2, 0 |
-| TST / TEST | ANDS r1, r2, 0 |
-| MOV / MOVI | ADDI 0, dst, imm |
+
+| Pseudo     | Expansion                          |
+| ---------- | ---------------------------------- |
+| CMP r1, r2 | SUBS r1, r2, 0                     |
+| CMN r1, r2 | ADDS r1, r2, 0                     |
+| TST / TEST | ANDS r1, r2, 0                     |
+| MOV / MOVI | ADDI 0, dst, imm                   |
 | PUSH / POP | SUBI/STRPOST и LDRPOST/ADDI на R30 |
+
 
 ## Кодировка: примеры
 

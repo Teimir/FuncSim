@@ -1,6 +1,6 @@
 # Микроархитектура RTL (full)
 
-Модуль: [`test/src/core.sv`](../../test/src/core.sv).  
+Модуль: `[test/src/core.sv](../../test/src/core.sv)`.  
 Это **не** суперскалярный и **не** 3-стадийный pipeline (`FEAT_PIPELINE_3 = 0` в [cores.yaml](../isa/cores.yaml)).
 
 ## Модель: single-issue FSM
@@ -22,17 +22,21 @@ stateDiagram-v2
   ST_MEM_WR_WAIT --> ST_FETCH_REQ
 ```
 
+
+
 ### Состояния
 
-| ID | Имя | Длительность (типично) |
-|----|-----|------------------------|
-| 0 | ST_FETCH_REQ | 1+ циклов (stall, IRQ redirect) |
-| 1 | ST_FETCH_WAIT | 1 (ожидание `if_resp_valid`) |
-| 2 | ST_EXEC | 1 |
-| 3 | ST_MEM_RD_REQ | 1 (AXI AR) |
-| 4 | ST_MEM_RD_WAIT | 1+ (AXI R) |
-| 5 | ST_MEM_WR_REQ | 1 (AXI AW/W) |
-| 6 | ST_MEM_WR_WAIT | 1+ (AXI B) |
+
+| ID  | Имя            | Длительность (типично)          |
+| --- | -------------- | ------------------------------- |
+| 0   | ST_FETCH_REQ   | 1+ циклов (stall, IRQ redirect) |
+| 1   | ST_FETCH_WAIT  | 1 (ожидание `if_resp_valid`)    |
+| 2   | ST_EXEC        | 1                               |
+| 3   | ST_MEM_RD_REQ  | 1 (AXI AR)                      |
+| 4   | ST_MEM_RD_WAIT | 1+ (AXI R)                      |
+| 5   | ST_MEM_WR_REQ  | 1 (AXI AW/W)                    |
+| 6   | ST_MEM_WR_WAIT | 1+ (AXI B)                      |
+
 
 **Минимальная латентность** (идеальная шина, без stall):
 
@@ -68,22 +72,28 @@ flowchart TB
   CSR --> PC
 ```
 
+
+
 ## Fetch-интерфейс
 
-| Сигнал | Направление | Описание |
-|--------|-------------|----------|
-| `if_req_valid`, `if_req_addr` | out | Запрос строки по `dbg_pc` или IRQ vector |
-| `if_resp_valid`, `if_resp_data` | in | Слово инструкции |
-| `if_stall` | in | Удержание в ST_FETCH_REQ |
 
-В [`top.sv`](../../test/src/top.sv): icache + AXI, BRAM ROM, или `fetch_rom_nop` (FPGA TN9K).
+| Сигнал                          | Направление | Описание                                 |
+| ------------------------------- | ----------- | ---------------------------------------- |
+| `if_req_valid`, `if_req_addr`   | out         | Запрос строки по `dbg_pc` или IRQ vector |
+| `if_resp_valid`, `if_resp_data` | in          | Слово инструкции                         |
+| `if_stall`                      | in          | Удержание в ST_FETCH_REQ                 |
+
+
+В `[top.sv](../../test/src/top.sv)`: icache + AXI, BRAM ROM, или `fetch_rom_nop` (FPGA TN9K).
 
 ## Data-интерфейс (AXI4-Lite)
 
-| Канал | Использование |
-|-------|----------------|
-| AR / R | LDR, LDREX |
+
+| Канал      | Использование      |
+| ---------- | ------------------ |
+| AR / R     | LDR, LDREX         |
 | AW / W / B | STR, STREX (успех) |
+
 
 - Адрес: `R[raddr] + imm` (знаковое 11-бит).
 - `d_wstrb` / маска load: `ir[14:11]` (4 бита).
@@ -123,25 +133,29 @@ irq_ack = irq_pending && (st==ST_FETCH_REQ) && !if_stall && !dbg_halted
 
 ## Exclusive monitor
 
-| Регистр | Назначение |
-|---------|------------|
-| `exclusive_addr` | Адрес LDREX |
+
+| Регистр           | Назначение    |
+| ----------------- | ------------- |
+| `exclusive_addr`  | Адрес LDREX   |
 | `exclusive_valid` | Monitor armed |
+
 
 Сброс при любом LDR/STR/STREX fail. STREX success: full word store, status 0 в WR_WAIT.
 
 ## Ресеты и дефолты (RTL full сегодня)
 
-| Параметр | Значение при reset |
-|----------|-------------------|
-| `dbg_pc` | 0 |
-| `int_enable` | **1** (отличие от Python flags=0) |
-| IRQ vector (SPR1) | `0x100` (в `csr_spr`) |
-| `illegal_instr_r` | 0 (но sticky — см. parity) |
+
+| Параметр          | Значение при reset                |
+| ----------------- | --------------------------------- |
+| `dbg_pc`          | 0                                 |
+| `int_enable`      | **1** (отличие от Python flags=0) |
+| IRQ vector (SPR1) | `0x100` (в `csr_spr`)             |
+| `illegal_instr_r` | 0 (но sticky — см. parity)        |
+
 
 ## Интеграция в SoC
 
-[`soc_top`](../../test/src/top.sv): `USE_TN9K_CORE=0`, `USE_LITE_CORE=0` → `e32c_core`.
+`[soc_top](../../test/src/top.sv)`: `USE_TN9K_CORE=0`, `USE_LITE_CORE=0` → `e32c_core`.
 
 - IRQ line 0: timer (level-sensitive).
 - GPIO/UART/timer/SD на AXI-APB за декодером.

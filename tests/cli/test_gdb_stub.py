@@ -17,6 +17,7 @@ def _args(**kw):
     defaults = {
         "hex": ROOT / "examples" / "smoke.hex",
         "bin": None,
+        "core": "full",
         "mmio": False,
         "mmio_base": 0xFFFF_0000,
         "sd_image": None,

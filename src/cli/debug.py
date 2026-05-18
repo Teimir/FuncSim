@@ -5,7 +5,12 @@ from __future__ import annotations
 import argparse
 import cmd
 
-from cli.debug_common import add_sim_session_arguments, build_repl_memory, load_program_into_memory
+from cli.debug_common import (
+    add_sim_session_arguments,
+    build_repl_memory,
+    cpu_state_from_args,
+    load_program_into_memory,
+)
 from core.bus import SystemBus
 from core.disasm import disassemble_word
 from core.exceptions import BreakpointHit, CpuHalted
@@ -125,7 +130,7 @@ def main() -> None:
 
     _, mem = build_repl_memory(args)
 
-    st = CPUState()
+    st = cpu_state_from_args(args)
     if not args.bin and not args.hex:
         p.error("provide --hex or --bin")
     load_program_into_memory(mem, args.load_addr, args)

@@ -10,9 +10,26 @@ from core.debug_controller import DebugController
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.peripherals.uart import Uart
+from core.spr_constants import VARIANT_CORE_INFO
+from core.state import CPUState
+
+
+def add_core_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--core",
+        choices=sorted(VARIANT_CORE_INFO.keys()),
+        default="full",
+        metavar="VARIANT",
+        help="Core variant: full (default), tn9k (no MUL*), lite (no MUL/LDREX)",
+    )
+
+
+def cpu_state_from_args(args: argparse.Namespace) -> CPUState:
+    return CPUState.for_variant(args.core)
 
 
 def add_sim_session_arguments(parser: argparse.ArgumentParser) -> None:
+    add_core_argument(parser)
     parser.add_argument("--load-addr", type=lambda x: int(x, 0), default=0)
     parser.add_argument("--hex", type=Path, help="Hex words file")
     parser.add_argument("--bin", type=Path, help="Binary image")
@@ -77,6 +94,8 @@ def create_debug_controller(ram: Memory, args: argparse.Namespace) -> DebugContr
         load_addr=args.load_addr,
         sd_image=args.sd_image,
         sd_create_sectors=args.sd_create_sectors,
+        core_variant=args.core,
+        sd_spi=bool(getattr(args, "sd_spi", False)),
     )
 
 

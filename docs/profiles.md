@@ -19,6 +19,7 @@
 ## Python
 
 - Семантика: [isa/spec.md](isa/spec.md)
+- **Вариант ядра:** `--core full|tn9k|lite` в `cli.sim`, `cli.debug`, `cli.debug_gui`, `cli.gdb_server` (illegal opcodes как в RTL-профиле; SPR CORE_INFO/FEATURES согласованы)
 - MMIO: block SD или `--sd-spi`
 - Cosim: [test/compare_rtl_python.py](../test/compare_rtl_python.py) — 3–4 smoke-теста
 

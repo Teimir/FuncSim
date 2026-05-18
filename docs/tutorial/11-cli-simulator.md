@@ -14,6 +14,7 @@ python -m cli.sim --asm docs/tutorial/asm/lab_fundamentals.asm --until-halt --du
 
 | Флаг                    | Описание                                          |
 | ----------------------- | ------------------------------------------------- |
+| `--core VARIANT`        | Ядро: `full` (default), `tn9k`, `lite` — см. [profiles.md](../profiles.md) |
 | `--load-addr ADDR`      | База загрузки (default 0)                         |
 | `--hex PATH`            | Образ: слово hex на строку                        |
 | `--bin PATH`            | Raw LE                                            |
@@ -49,6 +50,14 @@ python -m cli.sim --hex examples/smoke.hex --trace --max-steps 5
 ```bash
 python -m cli.sim --hex examples/smoke.hex --break 0x8 --max-steps 20
 ```
+
+### Профиль ядра TN9K
+
+```bash
+python -m cli.sim --core tn9k --asm docs/tutorial/asm/lab_mul.asm --max-steps 10
+```
+
+Ожидание: `IllegalInstruction` на `MUL` (как `core_tn9k` на FPGA).
 
 ### MMIO + UART
 

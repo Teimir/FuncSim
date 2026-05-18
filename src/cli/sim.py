@@ -13,12 +13,13 @@ from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.peripherals.uart import Uart
 from core.runner import Runner
-from core.state import CPUState
+from cli.debug_common import add_core_argument, cpu_state_from_args
 from core.trace import StepTrace
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description="E32C functional simulator")
+    add_core_argument(p)
     p.add_argument("--load-addr", type=lambda x: int(x, 0), default=0, help="Base address for --bin/--hex/--asm")
     p.add_argument("--bin", type=Path, help="Raw binary file (little-endian words as bytes)")
     p.add_argument("--hex", type=Path, help="Text file: one 32-bit hex word per line")
@@ -61,7 +62,7 @@ def main() -> None:
     else:
         mem = ram
 
-    st = CPUState()
+    st = cpu_state_from_args(args)
     if args.bin:
         load_binary(mem, args.load_addr, args.bin)
     elif args.hex:
