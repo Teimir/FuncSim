@@ -11,6 +11,7 @@
 | [docs/mmio.md](docs/mmio.md)                             | MMIO, регистры устройств           |
 | [docs/profiles.md](docs/profiles.md)                     | Python vs RTL vs FPGA              |
 | [docs/BACKLOG.md](docs/BACKLOG.md)                       | Отложенные эпики                   |
+| [docs/toolchain.md](docs/toolchain.md)                   | Тулчейн: asm, ld, ELF, objcopy     |
 | [test/README.md](test/README.md)                         | RTL, testbench, cosim              |
 | [test/fpga/README.md](test/fpga/README.md)               | Прошивка платы                     |
 | [docs/gdb/README.md](docs/gdb/README.md)                 | GDB Remote stub                    |

@@ -1,0 +1,66 @@
+# Cosim program snippets (assembled by tests/asm/test_cosim_yaml.py)
+programs:
+  - name: nop_halt
+    asm: |
+      NOP
+      HALT
+  - name: addi
+    asm: |
+      ADDI 2 0 10
+      ADDI 3 0 15
+      ADDS 4 2 3
+      HALT
+  - name: mov_pseudo
+    asm: |
+      MOV 1 0
+      ADDI 1 1 5
+      HALT
+  - name: cmp_branch
+    asm: |
+      ADDI 1 0 1
+      ADDI 2 0 2
+      CMP 1 2
+      BEQ skip
+      ADDI 3 0 99
+      skip:
+      HALT
+  - name: ldr_str
+    asm: |
+      ADDI 1 0 0x100
+      ADDI 2 0 0xDD
+      STR 1 2 15 0
+      LDR 3 1 15 0
+      HALT
+  - name: jmp_reg
+    asm: |
+      ADDI 1 0 8
+      JMP 1 0
+      HALT
+      NOP
+  - name: writespr
+    asm: |
+      ADDI 0 0 0x100
+      WRITESPR 1 0
+      HALT
+  - name: mul
+    asm: |
+      ADDI 1 0 3
+      ADDI 2 0 7
+      MUL 3 1 2 0
+      HALT
+  - name: ands
+    asm: |
+      ADDI 1 0 0xF0
+      ADDI 2 0 0x0F
+      ANDS 3 1 2
+      HALT
+  - name: push_pop
+    asm: |
+      ADDI 1 0 42
+      PUSH 1
+      POP 2
+      HALT
+  - name: long_imm
+    asm: |
+      ADDI 1 0 0x7FF
+      HALT

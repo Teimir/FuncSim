@@ -12,7 +12,6 @@ from core.memory import Memory
 from core.runner import Runner
 from core.state import CPUState
 
-
 LAB_DIR = Path(__file__).resolve().parents[2] / "docs" / "tutorial" / "asm"
 
 

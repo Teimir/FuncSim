@@ -121,7 +121,6 @@ def expand_macro_invocation(
         lm = _LOCAL_LABEL.match(frag.rstrip(":"))
         if lm and frag.endswith(":"):
             num, direction = lm.group(1), lm.group(2)
-            key = (lid, direction)
             if direction == "f":
                 label_name = f".__L{lid}_{num}_f"
                 state.local_labels[(lid, num, "f")] = label_name

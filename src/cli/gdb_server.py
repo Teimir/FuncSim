@@ -22,8 +22,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--host", default="127.0.0.1", help="Bind address (default 127.0.0.1)")
     args = p.parse_args(argv)
 
-    if not args.hex and not args.bin:
-        print("gdb_server: provide --hex or --bin", file=sys.stderr)
+    if not args.hex and not args.bin and not getattr(args, "elf", None):
+        print("gdb_server: provide --hex, --bin, or --elf", file=sys.stderr)
         return 2
 
     ram = Memory()
