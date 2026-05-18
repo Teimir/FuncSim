@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from cli.debug_common import add_core_argument, cpu_state_from_args
 from core.asm import AssembleError, assemble_text
 from core.bus import MMIO_BASE_DEFAULT, SystemBus
 from core.exceptions import BreakpointHit
@@ -13,7 +14,6 @@ from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
 from core.peripherals.uart import Uart
 from core.runner import Runner
-from cli.debug_common import add_core_argument, cpu_state_from_args
 from core.trace import StepTrace
 
 

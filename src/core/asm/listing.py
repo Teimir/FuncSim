@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.asm.driver import AsmResult, ListingRow
+from core.asm.driver import AsmResult
 
 
 def format_listing(result: AsmResult, *, base: int = 0) -> str:

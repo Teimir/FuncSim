@@ -6,9 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from core.asm import LinkSpec, assemble_text, link_programs
+from core.asm import LinkSpec, link_programs
 from core.loader import words_from_hex_lines
-
 from tests.asm.conftest import ROOT
 
 
