@@ -1,5 +1,14 @@
 """Fonts and Treeview column widths for the debugger GUI."""
 
+# Initial window size (all 32 GPR + disasm + memory page visible on typical displays)
+DEFAULT_WINDOW_GEOMETRY = "1320x920"
+MIN_WINDOW_WIDTH = 1000
+MIN_WINDOW_HEIGHT = 720
+REG_TREE_ROWS = 32
+DISASM_TREE_ROWS = 13
+MEM_TREE_ROWS = 14
+SPR_TREE_ROWS = 6
+
 FONT_MONO = ("Consolas", 10)
 FONT_MONO_BOLD = ("Consolas", 10, "bold")
 FONT_MONO_COMPACT = ("Consolas", 9)

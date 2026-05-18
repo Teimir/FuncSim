@@ -10,7 +10,13 @@ from tkinter import messagebox, ttk
 
 from cli.debug_common import add_sim_session_arguments, create_debug_controller, load_initial_image
 from cli.debug_gui.actions_mixin import ActionsMixin
-from cli.debug_gui.constants import FONT_MONO, FONT_MONO_BOLD
+from cli.debug_gui.constants import (
+    DEFAULT_WINDOW_GEOMETRY,
+    FONT_MONO,
+    FONT_MONO_BOLD,
+    MIN_WINDOW_HEIGHT,
+    MIN_WINDOW_WIDTH,
+)
 from cli.debug_gui.fill_mixin import SnapshotFillMixin
 from cli.debug_gui.tab_mixin import TabBuildMixin
 from cli.debug_gui.theme import apply_density_to_app, apply_ttk_theme, configure_mono_treeview_style
@@ -81,6 +87,8 @@ class DebuggerApp(ActionsMixin, SnapshotFillMixin, TabBuildMixin, tk.Tk):
         self.bind("<Control-o>", lambda e: self._open_file())
         self.bind("<Control-u>", lambda e: self._open_uart_terminal())
         self.bind("<Control-a>", lambda e: self._toggle_auto_hotkey())
+        self.minsize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+        self.geometry(DEFAULT_WINDOW_GEOMETRY)
         self.after(100, self._poll_run_queue)
         self.refresh()
 

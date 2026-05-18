@@ -188,7 +188,7 @@ class DebugController:
     last_error: str | None = None
     trace_max: int = 500
     listing_radius: int = 16
-    mem_page_lines: int = 16
+    mem_page_lines: int = 14
     mem_words_per_line: int = 4
     _mem_page_base: int = 0
     _trace: deque[StepTrace] = field(default_factory=lambda: deque(maxlen=500))
@@ -436,20 +436,23 @@ class DebugController:
     def _build_listing(self, pc: int) -> list[ListingLine]:
         r = self.listing_radius
         mem_lo, mem_hi = self._listing_memory_bounds()
-        pc = pc & 0xFFFFFFFF
-        span = r * 4
-        start = max(mem_lo, pc - span)
-        end = min(mem_hi, pc + span)
-        # Prefer full window: if clipped at start, extend forward; if at end, extend backward
-        want_words = 2 * r + 1
-        have_words = (end - start) // 4 + 1
-        if have_words < want_words:
-            extra = (want_words - have_words) * 4
-            grow_fwd = min(extra, mem_hi - end)
-            end += grow_fwd
-            extra -= grow_fwd
-            if extra > 0:
-                start = max(mem_lo, start - extra)
+        pc &= 0xFFFFFFFF
+        if pc < mem_lo:
+            pc = mem_lo
+        if pc > mem_hi:
+            pc = mem_hi
+        before = min(r, (pc - mem_lo) // 4)
+        after = min(r, (mem_hi - pc) // 4)
+        want = 2 * r + 1
+        deficit = want - (before + after + 1)
+        if deficit > 0:
+            add_after = min(deficit, (mem_hi - pc) // 4 - after)
+            after += add_after
+            deficit -= add_after
+            if deficit > 0:
+                before += min(deficit, (pc - mem_lo) // 4 - before)
+        start = pc - before * 4
+        end = pc + after * 4
         lines: list[ListingLine] = []
         br = self.runner.break_pcs
         addr = start
@@ -473,9 +476,12 @@ class DebugController:
 
     def _build_memory_rows(self, page_base: int) -> list[tuple[int, list[int | None]]]:
         base = page_base - (page_base % 4)
+        mem_hi = max(0, self.ram_size() - 4) if self.ram_size() >= 4 else 0
         rows: list[tuple[int, list[int | None]]] = []
         for line in range(self.mem_page_lines):
-            row_addr = (base + line * self.mem_words_per_line * 4) & 0xFFFFFFFF
+            row_addr = base + line * self.mem_words_per_line * 4
+            if row_addr > mem_hi:
+                break
             words: list[int | None] = []
             for w in range(self.mem_words_per_line):
                 a = (row_addr + w * 4) & 0xFFFFFFFF

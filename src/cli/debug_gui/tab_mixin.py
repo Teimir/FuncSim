@@ -8,9 +8,13 @@ from typing import Any
 
 from cli.debug_gui.constants import (
     DISASM_COL_WIDTHS,
+    DISASM_TREE_ROWS,
     FONT_MONO,
     MEM_COL_WIDTH_ADDR,
     MEM_COL_WIDTH_WORD,
+    MEM_TREE_ROWS,
+    REG_TREE_ROWS,
+    SPR_TREE_ROWS,
     TRACE_COL_WIDTH_DEFAULT,
     TRACE_COL_WIDTH_DISASM,
     TRACE_COL_WIDTH_N,
@@ -28,12 +32,12 @@ class TabBuildMixin:
         top = ttk.PanedWindow(parent, orient=tk.HORIZONTAL)
         top.pack(fill=tk.BOTH, expand=True)
         left = ttk.Frame(top)
-        right = ttk.Frame(top)
+        right = ttk.PanedWindow(top, orient=tk.VERTICAL)
         top.add(left, weight=1)
-        top.add(right, weight=2)
+        top.add(right, weight=3)
         ttk.Label(left, text="Registers (R31 = PC)").pack(anchor=tk.W)
         cols = ("i", "val")
-        self._tv_regs = ttk.Treeview(left, columns=cols, show="headings", height=18)
+        self._tv_regs = ttk.Treeview(left, columns=cols, show="headings", height=REG_TREE_ROWS)
         self._tv_regs.heading("i", text="#")
         self._tv_regs.heading("val", text="Value")
         self._tv_regs.column("i", width=36)
@@ -55,24 +59,28 @@ class TabBuildMixin:
             ttk.Checkbutton(flf, text=name, variable=v, state="disabled").pack(anchor=tk.W)
         spf = ttk.LabelFrame(left, text="SPR")
         spf.pack(fill=tk.BOTH, expand=True, pady=4)
-        self._tv_spr = ttk.Treeview(spf, columns=("idx", "val", "name"), show="headings", height=6)
+        self._tv_spr = ttk.Treeview(spf, columns=("idx", "val", "name"), show="headings", height=SPR_TREE_ROWS)
         for c, t in zip(("idx", "val", "name"), ("#", "Value", "Name"), strict=True):
             self._tv_spr.heading(c, text=t)
         self._tv_spr.pack(fill=tk.BOTH, expand=True)
         self._tv_spr.configure(style="Mono.Treeview")
-        fetchf = ttk.LabelFrame(right, text="Next instruction @ PC")
+        disasm_frame = ttk.Frame(right)
+        mem_frame = ttk.Frame(right)
+        right.add(disasm_frame, weight=2)
+        right.add(mem_frame, weight=1)
+        fetchf = ttk.LabelFrame(disasm_frame, text="Next instruction @ PC")
         fetchf.pack(fill=tk.X)
         self._var_fetch = tk.StringVar()
         self._lbl_fetch = ttk.Label(fetchf, textvariable=self._var_fetch, font=self._mono_font)
         self._lbl_fetch.pack(anchor=tk.W)
-        lhead = ttk.Frame(right)
+        lhead = ttk.Frame(disasm_frame)
         lhead.pack(fill=tk.X)
         ttk.Label(lhead, text="Disassembly (⇒ = PC, ● = breakpoint)").pack(side=tk.LEFT)
         ttk.Label(lhead, text="  ±lines:").pack(side=tk.LEFT)
         ttk.Entry(lhead, textvariable=self._var_list_radius, width=4).pack(side=tk.LEFT, padx=2)
         ttk.Button(lhead, text="Apply", command=self._on_list_radius_apply).pack(side=tk.LEFT)
         lcols = ("addr", "word", "dis", "mk")
-        self._tv_list = ttk.Treeview(right, columns=lcols, show="headings", height=14)
+        self._tv_list = ttk.Treeview(disasm_frame, columns=lcols, show="headings", height=DISASM_TREE_ROWS)
         for c, w in zip(lcols, DISASM_COL_WIDTHS, strict=True):
             self._tv_list.column(c, width=w)
         self._tv_list.heading("addr", text="Address")
@@ -84,7 +92,7 @@ class TabBuildMixin:
         self._tv_list.tag_configure("pc", background=LISTING_TAG_PC_BG, foreground=LISTING_TAG_PC_FG, font=self._mono_bold_font)
         self._tv_list.tag_configure("bp", background=LISTING_TAG_BP_BG)
         self._tv_list.bind("<Button-3>", self._on_list_rclick)
-        memf = ttk.LabelFrame(right, text="Memory page")
+        memf = ttk.LabelFrame(mem_frame, text="Memory page")
         memf.pack(fill=tk.BOTH, expand=True, pady=4)
         mf = ttk.Frame(memf)
         mf.pack(fill=tk.X)
@@ -96,7 +104,7 @@ class TabBuildMixin:
         ttk.Button(mf, text="▶", command=self._on_page_next).pack(side=tk.LEFT, padx=2)
         ttk.Button(mf, text="Sync PC", command=self._on_sync_pc_page).pack(side=tk.LEFT, padx=2)
         mcols = ("addr", "w0", "w1", "w2", "w3")
-        self._tv_mem = ttk.Treeview(memf, columns=mcols, show="headings", height=10)
+        self._tv_mem = ttk.Treeview(memf, columns=mcols, show="headings", height=MEM_TREE_ROWS)
         for c, title in zip(mcols, ("Addr", "w0", "w1", "w2", "w3"), strict=True):
             self._tv_mem.heading(c, text=title)
             self._tv_mem.column(c, width=MEM_COL_WIDTH_WORD if c != "addr" else MEM_COL_WIDTH_ADDR)
