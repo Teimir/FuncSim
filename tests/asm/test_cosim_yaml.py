@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 import yaml
 
 from core.asm import assemble_text
-
 from tests.asm.conftest import ROOT
 
 PROGRAMS_YAML = ROOT / "test" / "tn9k" / "cosim" / "programs.yaml"

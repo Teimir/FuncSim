@@ -35,7 +35,6 @@ def read_lines(path: Path, *, include_stack: list[Path] | None = None) -> list[t
 
 
 def preprocess_file(path: Path) -> tuple[list[tuple[str, int, str]], dict]:
-    from core.asm.macro import MacroDef
 
     lines = read_lines(path)
     lines, macro_defs = collect_macros(lines)

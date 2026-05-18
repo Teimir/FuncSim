@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.asm import AssembleError, assemble_text
+from core.asm import assemble_text
 from core.decode import decode_word
 
 

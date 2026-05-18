@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.asm.encode import COND_ALIAS, SCRATCH_REG, assemble_line
+from core.asm.encode import COND_ALIAS
 from core.asm.errors import AssembleError
 from core.asm.long_branch import expand_branch, needs_long_branch
 

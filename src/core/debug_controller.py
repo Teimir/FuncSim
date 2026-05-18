@@ -22,9 +22,9 @@ from core.exceptions import (
 )
 from core.loader import load_binary, load_words, words_from_hex_lines
 from core.memory import Memory
-from core.runner import Runner
 from core.mmio_timer_regs import TimerRegs
 from core.mmio_uart_regs import UartRegs
+from core.runner import Runner
 from core.spr_constants import SPR_CORE_INFO, SPR_FEATURES, SPR_ISA_REVISION, VARIANT_CORE_INFO
 from core.state import SPR_IRQ_MASK, SPR_IRQ_VECTOR, SPR_SAVED_IRQ_PC, CPUState
 from core.trace import StepTrace

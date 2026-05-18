@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from core.asm import AssembleError, assemble_file, assemble_text
-
 from tests.asm.conftest import ROOT
 
 

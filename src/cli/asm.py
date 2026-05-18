@@ -10,7 +10,6 @@ from pathlib import Path
 from core.asm import (
     AssembleError,
     LinkSpec,
-    assemble_file,
     assemble_text_with_listing,
     format_listing,
     link_programs,
