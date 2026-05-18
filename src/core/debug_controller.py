@@ -425,14 +425,35 @@ class DebugController:
         except Exception as e:  # noqa: BLE001
             return None, str(e)
 
+    def _listing_memory_bounds(self) -> tuple[int, int]:
+        """Inclusive word-aligned bounds for listing (program base .. end of RAM)."""
+        lo = self.load_addr & 0xFFFFFFFF
+        size = self.ram_size()
+        if size < 4:
+            return lo, lo
+        return lo, size - 4
+
     def _build_listing(self, pc: int) -> list[ListingLine]:
         r = self.listing_radius
-        start = (pc - r * 4) & 0xFFFFFFFF
-        start = start - (start % 4)
+        mem_lo, mem_hi = self._listing_memory_bounds()
+        pc = pc & 0xFFFFFFFF
+        span = r * 4
+        start = max(mem_lo, pc - span)
+        end = min(mem_hi, pc + span)
+        # Prefer full window: if clipped at start, extend forward; if at end, extend backward
+        want_words = 2 * r + 1
+        have_words = (end - start) // 4 + 1
+        if have_words < want_words:
+            extra = (want_words - have_words) * 4
+            grow_fwd = min(extra, mem_hi - end)
+            end += grow_fwd
+            extra -= grow_fwd
+            if extra > 0:
+                start = max(mem_lo, start - extra)
         lines: list[ListingLine] = []
         br = self.runner.break_pcs
-        for i in range(2 * r + 1):
-            addr = (start + i * 4) & 0xFFFFFFFF
+        addr = start
+        while addr <= end:
             w, err = self._read_word_safe(addr)
             if w is None:
                 dis = f"<{err}>"
@@ -447,6 +468,7 @@ class DebugController:
                     is_breakpoint=(addr in br),
                 )
             )
+            addr += 4
         return lines
 
     def _build_memory_rows(self, page_base: int) -> list[tuple[int, list[int | None]]]:
