@@ -52,6 +52,25 @@ e32c-ld -o /tmp/fw.elf main.asm@0 handler.asm@0x100
 python scripts/gen_firmware_hex.py --elf /tmp/fw.elf --words 256 --skip-fetch-rom
 ```
 
-## Опциональный LLVM
+## LLVM (experimental backend)
 
-Скрипт `scripts/build_llvm.sh` собирает **upstream LLVM 19** (target X86) в `toolchain/llvm-build/`. Это **не** бэкенд E32C; для ISA используйте Python-инструменты выше. LLVM-бэкенд `e32c` — отдельный эпик ([BACKLOG.md](BACKLOG.md)).
+Экспериментальный таргет **E32C** в LLVM 19 (форк в дереве + патчи Triple/ELF):
+
+```bash
+# Клонирует llvm-project при первом запуске, ставит lib/Target/E32C, собирает llvm-mc
+bash scripts/build_llvm.sh
+
+# Только установить/обновить таргет в уже клонированном llvm-project:
+bash scripts/install_e32c_llvm_target.sh
+```
+
+Бинарники: `toolchain/llvm-build-e32c/bin/llvm-mc`, `llc`, …
+
+Синтаксис asm для `llvm-mc`: регистры с префиксом `r` (`ADD r1 r2 r3`, `ADDI r0 r1 10`). Кодировки совпадают с Python `core.asm` (проверено на `ADD`/`ADDI`).
+
+```bash
+toolchain/llvm-build-e32c/bin/llvm-mc -triple=e32c-unknown-elf -show-encoding foo.s
+```
+
+Исходники бэкенда: `toolchain/llvm/E32C/` (TableGen из `docs/isa/opcodes.yaml` через `scripts/gen_llvm_e32c_td.py`).  
+`llc`/ISel — урезанный порт с Lanai; для продакшн-компиляции C пока используйте Python-тулчейн выше.
