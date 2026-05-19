@@ -39,3 +39,8 @@ test/out_*.vcd
 # Generated local test images
 examples/_*.img
 examples/*.img
+
+# Local LLVM checkout and build tree (see scripts/build_llvm.sh)
+toolchain/llvm-project/
+toolchain/llvm-build/
+toolchain/llvm-build-e32c/
